@@ -266,3 +266,95 @@ end
     return max_value
 end
 
+using MacroTools, Test
+
+
+macro trace(ex)
+    # TODO: Use the functions below to parse the expression into a dL_IR
+    argument_variables = parse_arguments(ex)
+    body_variables, program, assumptions, assertions = parse_body(ex)
+    variables = union(argument_variables, body_variables)
+    return dL_IR(variables, program, assumptions, assertions)
+end
+
+function parse_body()
+    assertions = collect_assertions(ex)
+    assumptions = collect_assumptions(ex)
+    variables = collect_unique_variables(ex)
+
+    program = remove_assertions(ex)
+    program = remove_assumptions(program)
+
+    return variables, program, assumptions, assertions
+end
+
+
+function collect_assumptions()
+    #TODO: Collect all assumptions in the program
+end
+
+function remove_assertions()
+    # TODO: Remove assertions from the program
+end
+
+function remove_assumptions()
+    #TODO: Remove assumptions from the program
+end
+
+function collect_variables()
+    #TODO: Collect all variables in the program
+
+end
+
+struct dL_IR
+    variables::Vector{Tuple{Symbol, Type}}
+    program::Expr
+    assumptions::Vector{Expr}
+    assertions::Vector{Expr}
+end
+
+@enum Type Real Integer Boolean
+
+function parse_arguments(ex)
+    #TODO: Check whether this is robust
+    @capture(ex, (function f_(xs__) body_ end) | (f_(xs__) = body_))
+
+    variables = Set{Tuple{Symbol, Symbol}}()
+    println(xs)
+    for x in xs
+        @capture(x, y_::t_)
+        push!(variables, (y, t))
+    end
+    return variables
+end
+
+ex = quote
+    function max(x::Real, y::Real)
+        @assume 0 <= x && 0 <= y
+        if x >= y
+            max_value = x
+        else
+            max_value = y
+        end
+        
+        @assert max_value >= x && max_value >= y
+        @assert max_value == x || max_value == y
+        return max_value
+    end
+end
+@test parse_arguments(ex) == Set{Tuple{Symbol, Symbol}}([(:x, :Real), (:y, :Real)])
+
+
+function collect_assertions(ex)
+    @capture(ex, (function f_(xs__) body_ end) | (f_(xs__) = body_))
+    assertions = Vector{Expr}()
+    for x in body.args
+        println(x)
+        if isa(x, Expr) && @capture(x, @assert q_)
+            push!(assertions, q)
+        end
+    end
+    return assertions
+end
+@test collect_assertions(ex) == [:(max_value >= x && max_value >= y), :(max_value == x || max_value == y)]
+
