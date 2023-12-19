@@ -1,4 +1,3 @@
-
 using MacroTools, Test
 # TODO: Clean up tests
 # TODO: Add additional test cases
