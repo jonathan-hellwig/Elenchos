@@ -1,8 +1,6 @@
 using MacroTools, Test
-# TODO: Clean up tests
-# TODO: Add additional test cases
-# TODO: Add error messages
 # TODO: Translate dL_IR into a kyx file
+# TODO: Check macro hygiene
 
 function parse_function(ex)
     # TODO: Use the functions below to parse the expression into a dL_IR
@@ -80,7 +78,6 @@ function parse_arguments(ex)
     end
     return variables
 end
-
 
 
 function collect_assertions(ex)
