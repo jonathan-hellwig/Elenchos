@@ -138,6 +138,34 @@ result = parse_function(empty_function)
 @Test.test result.assertions == assertions
 
 begin
+    program = Base.remove_linenums!(
+        quote
+        end
+    )
+    @Test.test program_to_kyx(program) == Empty()
+
+    program = Base.remove_linenums!(
+        quote
+            x = 1
+        end
+    )
+    @Test.test program_to_kyx(program) == Sequential(Empty(), Assignment(Expression(symbol, :x, nothing), Expression(Elenchos.real, 1, nothing)))
+    
+    program = :(x = 1)
+    @Test.test program_to_kyx(program) == Assignment(Expression(symbol, :x, nothing), Expression(Elenchos.real, 1, nothing))
+
+    program = Base.remove_linenums!(:( if true else end))
+    @Test.test program_to_kyx(program) == Choice(
+        Sequential(
+            Dl_Test(BoolTrue()),
+            Empty()),
+        Sequential(
+            Dl_Test(Not(BoolTrue())),
+            Empty()
+        )
+    )
+end
+begin
     formula = :(true)
     @Test.test formula_to_kyx(formula) == Formula(bool_true, nothing, nothing, nothing, nothing)
 

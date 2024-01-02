@@ -99,7 +99,63 @@ function formula_to_kyx(formula)
 
 end
 
+
+@enum ProgramSymbol assign choice sequential dl_test
+
+"""
+    Program
+    A program is a sequence of assignments, choices and tests.
+    Syntax: α, β, Q, x, e ::= α;β | ?Q | α ∪ β | x := e
+"""
+struct Program
+    #TODO: Introduce partial constructors
+    symbol::ProgramSymbol
+    first_programs::Union{Program, Nothing}
+    second_programs::Union{Program, Nothing}
+    formula::Union{Formula, Nothing}
+    expressions::Union{Tuple{Expression, Expression}, Nothing}
+end
+#TODO: Add a custom constructor for each symbol
+Assignment(symbol::Expression, expression::Expression) = Program(assign, nothing, nothing, nothing, (symbol, expression))
+Choice(first_program::Program, second_program::Program) = Program(choice, first_program, second_program, nothing, nothing)
+Sequential(first_program::Union{Program, Nothing}, second_program::Union{Program, Nothing}) = Program(sequential, first_program, second_program, nothing, nothing)
+Empty() = Sequential(nothing, nothing)
+Dl_Test(formula::Formula) = Program(dl_test, nothing, nothing, formula, nothing)
+
+function program_to_kyx(program)
+    if program.head == :block
+        if length(program.args) == 0
+            kyx_program = Empty()
+        else
+            new_program = Expr(program.head, program.args[1:end-1]...)
+            kyx_program = Sequential(program_to_kyx(new_program), program_to_kyx(program.args[end]))
+        end
+    elseif program.head == :if
+        # TODO: Handle the case where there is no else branch and when there are more than 2 branches
+        if_formula = formula_to_kyx(program.args[1])
+        if_condition = Dl_Test(if_formula)
+        if_block = program_to_kyx(program.args[2])
+        else_formula = Formula(Elenchos.not, if_formula, nothing, nothing, nothing)
+        else_condition = Dl_Test(else_formula)
+        if length(program.args) == 2
+            else_block = Empty()
+        elseif length(program.args) == 3
+            else_block = program_to_kyx(program.args[3])
+        end
+        first_choice = Sequential(if_condition, if_block)
+        second_choice = Sequential(else_condition, else_block)
+        kyx_program = Choice(first_choice, second_choice)
+    elseif program.head == :(=)
+        kyx_program = Assignment(expression_to_kyx(program.args[1]), expression_to_kyx(program.args[2]))
+    end
+    return kyx_program
+end
+
+
 export ExpressionSymbol, plus, minus, mult, div, real, symbol
 export FormulaSymbol, less_or_equal, greater_or_equal, less, greater, equal, not_equal, and, or, not, bool_true, bool_false
 export expression_to_kyx, formula_to_kyx, Expression, Formula
 export Not, And, Or, LessOrEqual, GreaterOrEqual, Less, Greater, Equal, NotEqual, BoolTrue, BoolFalse
+export ProgramSymbol, assign, choice, sequential, dl_test
+export Program, Assignment, Choice, Sequential, Empty, Dl_Test
+export program_to_kyx
