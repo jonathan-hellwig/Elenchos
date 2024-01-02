@@ -38,7 +38,10 @@ function expression_to_kyx(expression)
 end
 
 @enum FormulaSymbol less_or_equal greater_or_equal less greater equal not_equal and or not
-
+"""
+    Formula
+    Syntax: e, q, E, Q := e <= q, e < q, e = q, e > q, e >= q, e != q, E && Q, E || Q, !E
+"""
 struct Formula
     symbol::FormulaSymbol
     # Has either zero, one or two subformulas
@@ -75,3 +78,7 @@ function formula_to_kyx(formula)
     return kyx_formula
 
 end
+
+export ExpressionSymbol, plus, minus, mult, div, real, symbol
+export FormulaSymbol, less_or_equal, greater_or_equal, less, greater, equal, not_equal, and, or, not
+export expression_to_kyx, formula_to_kyx, Expression, Formula
