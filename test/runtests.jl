@@ -167,37 +167,37 @@ begin
 end
 begin
     formula = :(true)
-    @Test.test formula_to_kyx(formula) == Formula(bool_true, nothing, nothing, nothing, nothing)
+    @Test.test formula_to_kyx(formula) == BoolTrue()
 
     formula = :(false)
-    @Test.test formula_to_kyx(formula) == Formula(bool_false, nothing, nothing, nothing, nothing)
+    @Test.test formula_to_kyx(formula) == BoolFalse()
 
     formula = :(0.0 <= x)
-    @Test.test formula_to_kyx(formula) == Formula(less_or_equal, nothing, nothing, Expression(Elenchos.real, 0.0, nothing), Expression(symbol, :x, nothing))
+    @Test.test formula_to_kyx(formula) == LessOrEqual(Expression(Elenchos.real, 0.0, nothing), Expression(symbol, :x, nothing))
 
     formula = :(0.0 < x)
-    @Test.test formula_to_kyx(formula) == Formula(Elenchos.less, nothing, nothing, Expression(Elenchos.real, 0.0, nothing), Expression(symbol, :x, nothing))
+    @Test.test formula_to_kyx(formula) == Less(Expression(Elenchos.real, 0.0, nothing), Expression(symbol, :x, nothing))
 
     formula = :(0.0 >= x)
-    @Test.test formula_to_kyx(formula) == Formula(greater_or_equal, nothing, nothing, Expression(Elenchos.real, 0.0, nothing), Expression(symbol, :x, nothing))
+    @Test.test formula_to_kyx(formula) == GreaterOrEqual(Expression(Elenchos.real, 0.0, nothing), Expression(symbol, :x, nothing))
 
     formula = :(0.0 > x)
-    @Test.test formula_to_kyx(formula) == Formula(greater, nothing, nothing, Expression(Elenchos.real, 0.0, nothing), Expression(symbol, :x, nothing))
+    @Test.test formula_to_kyx(formula) == Greater(Expression(Elenchos.real, 0.0, nothing), Expression(symbol, :x, nothing))
 
     formula = :(0.0 == x)
-    @Test.test formula_to_kyx(formula) == Formula(equal, nothing, nothing, Expression(Elenchos.real, 0.0, nothing), Expression(symbol, :x, nothing))
+    @Test.test formula_to_kyx(formula) == Equal(Expression(Elenchos.real, 0.0, nothing), Expression(symbol, :x, nothing))
 
     formula = :(0.0 != x)
-    @Test.test formula_to_kyx(formula) == Formula(not_equal, nothing, nothing, Expression(Elenchos.real, 0.0, nothing), Expression(symbol, :x, nothing))
+    @Test.test formula_to_kyx(formula) == NotEqual(Expression(Elenchos.real, 0.0, nothing), Expression(symbol, :x, nothing))
 
     formula = :(0.0 <= x && x <= 1.0)
-    @Test.test formula_to_kyx(formula) == Formula(and, Formula(less_or_equal, nothing, nothing, Expression(Elenchos.real, 0.0, nothing), Expression(symbol, :x, nothing)), Formula(less_or_equal, nothing, nothing, Expression(symbol, :x, nothing), Expression(Elenchos.real, 1.0, nothing)), nothing, nothing)
+    @Test.test formula_to_kyx(formula) == And(LessOrEqual(Expression(Elenchos.real, 0.0, nothing), Expression(symbol, :x, nothing)), LessOrEqual(Expression(symbol, :x, nothing), Expression(Elenchos.real, 1.0, nothing)))
 
     formula = :(0.0 <= x || x <= 1.0)
-    @Test.test formula_to_kyx(formula) == Formula(or, Formula(less_or_equal, nothing, nothing, Expression(Elenchos.real, 0.0, nothing), Expression(symbol, :x, nothing)), Formula(less_or_equal, nothing, nothing, Expression(symbol, :x, nothing), Expression(Elenchos.real, 1.0, nothing)), nothing, nothing)
+    @Test.test formula_to_kyx(formula) == Or(LessOrEqual(Expression(Elenchos.real, 0.0, nothing), Expression(symbol, :x, nothing)), LessOrEqual(Expression(symbol, :x, nothing), Expression(Elenchos.real, 1.0, nothing)))
 
     formula = :(!(0.0 <= x))
-    @Test.test formula_to_kyx(formula) == Formula(not, Formula(less_or_equal, nothing, nothing, Expression(Elenchos.real, 0.0, nothing), Expression(symbol, :x, nothing)), nothing, nothing, nothing)
+    @Test.test formula_to_kyx(formula) == Not(LessOrEqual(Expression(Elenchos.real, 0.0, nothing), Expression(symbol, :x, nothing)))
 end
 
 begin
