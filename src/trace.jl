@@ -1,4 +1,4 @@
-using MacroTools, Test
+using MacroTools
 # TODO: Translate dL_IR into a kyx file
 # TODO: Check macro hygiene
 
