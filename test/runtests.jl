@@ -135,3 +135,57 @@ result = parse_function(empty_function)
 @test result.program == body_wihout_assumptions_and_assertions
 @test result.assumptions == assumptions
 @test result.assertions == assertions
+
+
+begin
+    expression = :(1.0 + 1.2)
+    @test expression_to_kyx(expression) == Expression(plus, Expression(real, 1.0, nothing), Expression(real, 1.2, nothing))
+
+    expression = :(1.0 + (1.2 + 1.3)) 
+    @test expression_to_kyx(expression) == Expression(plus, Expression(real, 1.0, nothing), Expression(plus, Expression(real, 1.2, nothing), Expression(real, 1.3, nothing)))
+
+    expression = :((1.0 + 1.2) + 1.3)
+    @test expression_to_kyx(expression) == Expression(plus, Expression(plus, Expression(real, 1.0, nothing), Expression(real, 1.2, nothing)), Expression(real, 1.3, nothing))
+
+    epression = :(1.0 + 1.2 + 1.3)
+    @test expression_to_kyx(expression) == Expression(plus, Expression(plus, Expression(real, 1.0, nothing), Expression(real, 1.2, nothing)), Expression(real, 1.3, nothing))
+
+    expression = :(1.0 - 1.2)
+    @test expression_to_kyx(expression) == Expression(minus, Expression(real, 1.0, nothing), Expression(real, 1.2, nothing))
+
+    expression = :(1.0 - (1.2 - 1.3))
+    @test expression_to_kyx(expression) == Expression(minus, Expression(real, 1.0, nothing), Expression(minus, Expression(real, 1.2, nothing), Expression(real, 1.3, nothing)))
+
+    expression = :((1.0 - 1.2) - 1.3)
+    @test expression_to_kyx(expression) == Expression(minus, Expression(minus, Expression(real, 1.0, nothing), Expression(real, 1.2, nothing)), Expression(real, 1.3, nothing))
+
+    expression = :(1.0 * 1.2)
+    @test expression_to_kyx(expression) == Expression(mult, Expression(real, 1.0, nothing), Expression(real, 1.2, nothing))
+
+    expression = :(1.0 * (1.2 * 1.3))
+    @test expression_to_kyx(expression) == Expression(mult, Expression(real, 1.0, nothing), Expression(mult, Expression(real, 1.2, nothing), Expression(real, 1.3, nothing)))
+
+    expression = :((1.0 * 1.2) * 1.3)
+    @test expression_to_kyx(expression) == Expression(mult, Expression(mult, Expression(real, 1.0, nothing), Expression(real, 1.2, nothing)), Expression(real, 1.3, nothing))
+
+    expression = :(1.0 * 1.2 * 1.3)
+    @test expression_to_kyx(expression) == Expression(mult, Expression(mult, Expression(real, 1.0, nothing), Expression(real, 1.2, nothing)), Expression(real, 1.3, nothing))
+
+    expression = :(1.0 / 1.2)
+    @test expression_to_kyx(expression) == Expression(div, Expression(real, 1.0, nothing), Expression(real, 1.2, nothing))
+
+    expression = :(1.0 / (1.2 / 1.3))
+    @test expression_to_kyx(expression) == Expression(div, Expression(real, 1.0, nothing), Expression(div, Expression(real, 1.2, nothing), Expression(real, 1.3, nothing)))
+
+    expression = :((1.0 / 1.2) / 1.3)
+    @test expression_to_kyx(expression) == Expression(div, Expression(div, Expression(real, 1.0, nothing), Expression(real, 1.2, nothing)), Expression(real, 1.3, nothing))
+    
+    expression = :(1.0 + 1.2 * 1.3 )
+    @test expression_to_kyx(expression) == Expression(plus, Expression(real, 1.0, nothing), Expression(mult, Expression(real, 1.2, nothing), Expression(real, 1.3, nothing)))
+
+    expression = :(1.0 * 1.2 + 1.3 )
+    @test expression_to_kyx(expression) == Expression(plus, Expression(mult, Expression(real, 1.0, nothing), Expression(real, 1.2, nothing)), Expression(real, 1.3, nothing))
+
+    expression = :(x)
+    @test expression_to_kyx(expression) == Expression(symbol, :x, nothing)
+end
