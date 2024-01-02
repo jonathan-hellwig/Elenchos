@@ -1,4 +1,5 @@
-using Test, MacroTools, Elenchos
+import Test
+using MacroTools, Elenchos
 
 function_definition = quote
     function max(x::Real, y::Real)
