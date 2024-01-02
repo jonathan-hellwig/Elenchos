@@ -136,6 +136,34 @@ result = parse_function(empty_function)
 @test result.assumptions == assumptions
 @test result.assertions == assertions
 
+begin
+    formula = :(0.0 <= x)
+    @test formula_to_kyx(formula) == Formula(less_or_equal, nothing, nothing, Expression(real, 0.0, nothing), Expression(symbol, :x, nothing))
+
+    formula = :(0.0 < x)
+    @test formula_to_kyx(formula) == Formula(less, nothing, nothing, Expression(real, 0.0, nothing), Expression(symbol, :x, nothing))
+
+    formula = :(0.0 >= x)
+    @test formula_to_kyx(formula) == Formula(greater_or_equal, nothing, nothing, Expression(real, 0.0, nothing), Expression(symbol, :x, nothing))
+
+    formula = :(0.0 > x)
+    @test formula_to_kyx(formula) == Formula(greater, nothing, nothing, Expression(real, 0.0, nothing), Expression(symbol, :x, nothing))
+
+    formula = :(0.0 == x)
+    @test formula_to_kyx(formula) == Formula(equal, nothing, nothing, Expression(real, 0.0, nothing), Expression(symbol, :x, nothing))
+
+    formula = :(0.0 != x)
+    @test formula_to_kyx(formula) == Formula(not_equal, nothing, nothing, Expression(real, 0.0, nothing), Expression(symbol, :x, nothing))
+
+    formula = :(0.0 <= x && x <= 1.0)
+    @test formula_to_kyx(formula) == Formula(and, Formula(less_or_equal, nothing, nothing, Expression(real, 0.0, nothing), Expression(symbol, :x, nothing)), Formula(less_or_equal, nothing, nothing, Expression(symbol, :x, nothing), Expression(real, 1.0, nothing)), nothing, nothing)
+
+    formula = :(0.0 <= x || x <= 1.0)
+    @test formula_to_kyx(formula) == Formula(or, Formula(less_or_equal, nothing, nothing, Expression(real, 0.0, nothing), Expression(symbol, :x, nothing)), Formula(less_or_equal, nothing, nothing, Expression(symbol, :x, nothing), Expression(real, 1.0, nothing)), nothing, nothing)
+
+    formula = :(!(0.0 <= x))
+    @test formula_to_kyx(formula) == Formula(not, Formula(less_or_equal, nothing, nothing, Expression(real, 0.0, nothing), Expression(symbol, :x, nothing)), nothing, nothing, nothing)
+end
 
 begin
     expression = :(1.0 + 1.2)

@@ -36,3 +36,42 @@ function expression_to_kyx(expression)
     end
     return kyx_expression
 end
+
+@enum FormulaSymbol less_or_equal greater_or_equal less greater equal not_equal and or not
+
+struct Formula
+    symbol::FormulaSymbol
+    # Has either zero, one or two subformulas
+    first_subformula::Union{Formula, Nothing}
+    second_subformula::Union{Formula, Nothing}
+    # Has either zero, one or two subexpressions
+    first_expressions::Union{Expression, Nothing}
+    second_expressions::Union{Expression, Nothing}
+end
+
+function formula_to_kyx(formula)
+    symbol_to_formula = Dict(
+        :<= => less_or_equal,
+        :>= => greater_or_equal,
+        :< => less,
+        :> => greater,
+        :(==) => equal,
+        :!= => not_equal,
+        :&& => and,
+        :|| => or,
+        :! => not,
+    )
+    if formula.head in [:&&, :||]
+        kyx_formula = Formula(symbol_to_formula[formula.head], formula_to_kyx(formula.args[1]), formula_to_kyx(formula.args[2]), nothing, nothing)
+    end
+
+    symbol = formula.args[1]
+    
+    if symbol in [:<=, :>=, :<, :>, :(==), :!=]
+        kyx_formula = Formula(symbol_to_formula[symbol], nothing, nothing, expression_to_kyx(formula.args[2]), expression_to_kyx(formula.args[3]))
+    elseif symbol == :!
+        kyx_formula = Formula(symbol_to_formula[symbol], formula_to_kyx(formula.args[2]), nothing, nothing, nothing)
+    end
+    return kyx_formula
+
+end
