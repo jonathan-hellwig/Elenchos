@@ -137,6 +137,12 @@ result = parse_function(empty_function)
 @Test.test result.assertions == assertions
 
 begin
+    formula = :(true)
+    @Test.test formula_to_kyx(formula) == Formula(bool_true, nothing, nothing, nothing, nothing)
+
+    formula = :(false)
+    @Test.test formula_to_kyx(formula) == Formula(bool_false, nothing, nothing, nothing, nothing)
+
     formula = :(0.0 <= x)
     @Test.test formula_to_kyx(formula) == Formula(less_or_equal, nothing, nothing, Expression(Elenchos.real, 0.0, nothing), Expression(symbol, :x, nothing))
 

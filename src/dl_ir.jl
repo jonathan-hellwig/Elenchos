@@ -37,7 +37,7 @@ function expression_to_kyx(expression)
     return kyx_expression
 end
 
-@enum FormulaSymbol less_or_equal greater_or_equal less greater equal not_equal and or not
+@enum FormulaSymbol less_or_equal greater_or_equal less greater equal not_equal and or not bool_true bool_false
 """
     Formula
     Syntax: e, q, E, Q := e <= q, e < q, e = q, e > q, e >= q, e != q, E && Q, E || Q, !E
@@ -64,21 +64,28 @@ function formula_to_kyx(formula)
         :|| => or,
         :! => not,
     )
-    if formula.head in [:&&, :||]
+    if isa(formula, Bool)
+        if formula
+            value = bool_true
+        else
+            value = bool_false
+        end
+        kyx_formula = Formula(value, nothing, nothing, nothing, nothing)
+    elseif formula.head in [:&&, :||]
         kyx_formula = Formula(symbol_to_formula[formula.head], formula_to_kyx(formula.args[1]), formula_to_kyx(formula.args[2]), nothing, nothing)
-    end
-
+    elseif formula.head == :call
     symbol = formula.args[1]
     
     if symbol in [:<=, :>=, :<, :>, :(==), :!=]
         kyx_formula = Formula(symbol_to_formula[symbol], nothing, nothing, expression_to_kyx(formula.args[2]), expression_to_kyx(formula.args[3]))
     elseif symbol == :!
         kyx_formula = Formula(symbol_to_formula[symbol], formula_to_kyx(formula.args[2]), nothing, nothing, nothing)
+        end
     end
     return kyx_formula
 
 end
 
 export ExpressionSymbol, plus, minus, mult, div, real, symbol
-export FormulaSymbol, less_or_equal, greater_or_equal, less, greater, equal, not_equal, and, or, not
+export FormulaSymbol, less_or_equal, greater_or_equal, less, greater, equal, not_equal, and, or, not, bool_true, bool_false
 export expression_to_kyx, formula_to_kyx, Expression, Formula
