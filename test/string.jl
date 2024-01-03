@@ -66,3 +66,25 @@ end
 @Test.test formula_to_string(Not(Or(Greater(DlReal(3), DlReal(2)), Equal(DlReal(4),DlReal(4))))) == "!(3 > 2 | 4 = 4)"
 
 
+function program_to_string(program::Program)
+    symbol_to_string = Dict(
+        assign => ":=",
+        choice => "∪",
+        sequential => ";",
+        dl_test => "?"
+    )
+    if program.symbol == assign
+        return "$(expression_to_string(program.expressions[1])) " * symbol_to_string[program.symbol] * " $(expression_to_string(program.expressions[2]))"
+    elseif program.symbol == choice
+        return "$(program_to_string(program.first_programs)) " * symbol_to_string[program.symbol] * " $(program_to_string(program.second_programs))"
+    elseif program.symbol == sequential
+        return "$(program_to_string(program.first_programs))" * symbol_to_string[program.symbol] * " $(program_to_string(program.second_programs))"
+    elseif program.symbol == dl_test
+        return symbol_to_string[program.symbol] * "($(formula_to_string(program.formula)))"
+    end
+end
+
+@Test.test program_to_string(Assignment(DlSymbol(:x), DlReal(1.0))) == "x := 1.0"
+@Test.test program_to_string(Sequential(Assignment(DlSymbol(:x), DlReal(1.0)), Assignment(DlSymbol(:y), DlReal(2.0)))) == "x := 1.0; y := 2.0"
+@Test.test program_to_string(Choice(Assignment(DlSymbol(:x), DlReal(1.0)), Assignment(DlSymbol(:y), DlReal(2.0)))) == "x := 1.0 ∪ y := 2.0"
+@Test.test program_to_string(DlTest(BoolTrue())) == "?(true)"
