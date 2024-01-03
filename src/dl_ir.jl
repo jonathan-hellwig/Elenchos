@@ -133,8 +133,8 @@ function program_to_kyx(program)
         if length(program.args) == 0
             kyx_program = Empty()
         else
-            new_program = Expr(program.head, program.args[1:end-1]...)
-            kyx_program = Sequential(program_to_kyx(new_program), program_to_kyx(program.args[end]))
+            new_program = Expr(program.head, program.args[2:end]...)
+            kyx_program = Sequential(program_to_kyx(program.args[1]), program_to_kyx(new_program))
         end
     elseif program.head == :if
         # TODO: Handle the case where there is no else branch and when there are more than 2 branches
