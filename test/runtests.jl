@@ -149,18 +149,18 @@ begin
             x = 1
         end
     )
-    @Test.test program_to_kyx(program) == Sequential(Empty(), Assignment(Expression(symbol, :x, nothing), Expression(Elenchos.real, 1, nothing)))
+    @Test.test program_to_kyx(program) == Sequential(Assignment(DlSymbol(:x), DlReal(1)), Empty())
     
     program = :(x = 1)
-    @Test.test program_to_kyx(program) == Assignment(Expression(symbol, :x, nothing), Expression(Elenchos.real, 1, nothing))
+    @Test.test program_to_kyx(program) == Assignment(DlSymbol(:x), DlReal(1))
 
     program = Base.remove_linenums!(:( if true else end))
     @Test.test program_to_kyx(program) == Choice(
         Sequential(
-            Dl_Test(BoolTrue()),
+            DlTest(BoolTrue()),
             Empty()),
         Sequential(
-            Dl_Test(Not(BoolTrue())),
+            DlTest(Not(BoolTrue())),
             Empty()
         )
     )

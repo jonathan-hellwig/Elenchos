@@ -125,7 +125,7 @@ Assignment(symbol::Expression, expression::Expression) = Program(assign, nothing
 Choice(first_program::Program, second_program::Program) = Program(choice, first_program, second_program, nothing, nothing)
 Sequential(first_program::Union{Program, Nothing}, second_program::Union{Program, Nothing}) = Program(sequential, first_program, second_program, nothing, nothing)
 Empty() = Program(empty, nothing, nothing, nothing, nothing)
-Dl_Test(formula::Formula) = Program(dl_test, nothing, nothing, formula, nothing)
+DlTest(formula::Formula) = Program(dl_test, nothing, nothing, formula, nothing)
 
 # TODO: Add the empty program
 function program_to_kyx(program)
@@ -139,10 +139,10 @@ function program_to_kyx(program)
     elseif program.head == :if
         # TODO: Handle the case where there is no else branch and when there are more than 2 branches
         if_formula = formula_to_kyx(program.args[1])
-        if_condition = Dl_Test(if_formula)
+        if_condition = DlTest(if_formula)
         if_block = program_to_kyx(program.args[2])
         else_formula = Formula(Elenchos.not, if_formula, nothing, nothing, nothing)
-        else_condition = Dl_Test(else_formula)
+        else_condition = DlTest(else_formula)
         if length(program.args) == 2
             else_block = Empty()
         elseif length(program.args) == 3
@@ -163,6 +163,6 @@ export FormulaSymbol, less_or_equal, greater_or_equal, less, greater, equal, not
 export expression_to_kyx, formula_to_kyx, Expression, Formula
 export Not, And, Or, LessOrEqual, GreaterOrEqual, Less, Greater, Equal, NotEqual, BoolTrue, BoolFalse
 export ProgramSymbol, assign, choice, sequential, dl_test
-export Program, Assignment, Choice, Sequential, Empty, Dl_Test
+export Program, Assignment, Choice, Sequential, Empty, DlTest
 export program_to_kyx
 export DlReal, DlSymbol, Plus, Minus, Mult, Div
