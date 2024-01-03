@@ -5,7 +5,12 @@ struct Expression
     left::Union{Expression, Symbol, Real}
     right::Union{Expression, Nothing}
 end
-
+Plus(left::Union{Expression, Symbol, Real}, right::Union{Expression, Symbol, Real}) = Expression(plus, left, right)
+Minus(left::Union{Expression, Symbol, Real}, right::Union{Expression, Symbol, Real}) = Expression(minus, left, right)
+Mult(left::Union{Expression, Symbol, Real}, right::Union{Expression, Symbol, Real}) = Expression(mult, left, right)
+Div(left::Union{Expression, Symbol, Real}, right::Union{Expression, Symbol, Real}) = Expression(div, left, right)
+DlReal(value::Real) = Expression(real, value, nothing)
+DlSymbol(dlsymbol::Symbol) = Expression(symbol, dlsymbol, nothing)
 function expression_to_kyx(expression)
     if isa(expression, Real)
         return Expression(real, expression, nothing)
@@ -122,6 +127,7 @@ Sequential(first_program::Union{Program, Nothing}, second_program::Union{Program
 Empty() = Sequential(nothing, nothing)
 Dl_Test(formula::Formula) = Program(dl_test, nothing, nothing, formula, nothing)
 
+# TODO: Add the empty program
 function program_to_kyx(program)
     if program.head == :block
         if length(program.args) == 0
@@ -159,3 +165,4 @@ export Not, And, Or, LessOrEqual, GreaterOrEqual, Less, Greater, Equal, NotEqual
 export ProgramSymbol, assign, choice, sequential, dl_test
 export Program, Assignment, Choice, Sequential, Empty, Dl_Test
 export program_to_kyx
+export DlReal, DlSymbol, Plus, Minus, Mult, Div
