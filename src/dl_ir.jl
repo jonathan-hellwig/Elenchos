@@ -105,7 +105,7 @@ function formula_to_kyx(formula)
 end
 
 
-@enum ProgramSymbol assign choice sequential dl_test
+@enum ProgramSymbol assign choice sequential dl_test empty
 
 """
     Program
@@ -124,7 +124,7 @@ end
 Assignment(symbol::Expression, expression::Expression) = Program(assign, nothing, nothing, nothing, (symbol, expression))
 Choice(first_program::Program, second_program::Program) = Program(choice, first_program, second_program, nothing, nothing)
 Sequential(first_program::Union{Program, Nothing}, second_program::Union{Program, Nothing}) = Program(sequential, first_program, second_program, nothing, nothing)
-Empty() = Sequential(nothing, nothing)
+Empty() = Program(empty, nothing, nothing, nothing, nothing)
 Dl_Test(formula::Formula) = Program(dl_test, nothing, nothing, formula, nothing)
 
 # TODO: Add the empty program
