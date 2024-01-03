@@ -1,9 +1,6 @@
 import Test
 using Elenchos
 
-
-
-
 @Test.test expression_to_string(DlSymbol(:x)) == "x"
 
 @Test.test expression_to_string(DlReal(1.0)) == "1.0"
