@@ -1,8 +1,6 @@
 export @elenchos
 
 using MacroTools
-# TODO: Check macro hygiene
-# TODO: Clean up exports
 
 function parse_function(ex)
     # TODO: Use the functions below to parse the expression into a dL_IR
@@ -74,7 +72,6 @@ function parse_arguments(ex)
     return variables
 end
 
-
 function collect_assertions(ex)
     # TODO: Make sure that the assertions are stated in the first line of the function
     # This does not work if assertions are nested in if statements
@@ -97,5 +94,3 @@ macro elenchos(function_definition)
     assertions_ir = map(x -> formula_to_dl_ir(x), assertions)
     return to_kyx_file_string(variables, assumptions_ir, assertions_ir, program_ir)
 end
-
-export parse_function, parse_body, collect_assumptions, remove_assertions, remove_assumptions, collect_unique_variables, parse_arguments, collect_assertions

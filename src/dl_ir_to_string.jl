@@ -63,5 +63,3 @@ function program_to_string(program::Program)
         return ""
     end
 end
-
-export expression_to_string, formula_to_string, program_to_string

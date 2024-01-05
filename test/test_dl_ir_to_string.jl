@@ -1,5 +1,6 @@
 import Test
-using Elenchos
+using Elenchos: formula_to_string, expression_to_string, program_to_string
+using Elenchos: DlReal, DlSymbol, DlTest, BoolTrue, BoolFalse, LessOrEqual, Greater, Equal, And, Or, Not, Plus, Minus, Mult, Div, Assignment, Sequential, Choice, Empty
 
 @Test.testset "Test expression_to_string" begin
     @Test.test expression_to_string(DlSymbol(:x)) == "x"

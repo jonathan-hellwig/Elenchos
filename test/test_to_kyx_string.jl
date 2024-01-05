@@ -1,5 +1,5 @@
 import Test
-using Elenchos
+using Elenchos: to_kyx_variable_string, to_kyx_problem_string, to_kyx_file_string
 
 @Test.testset "Test to_kyx_variable_string" begin
     variables = [(:x, :Real)]

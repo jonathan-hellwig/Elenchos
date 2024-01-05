@@ -1,6 +1,7 @@
 import Test
-using MacroTools, Elenchos
-
+using MacroTools
+using Elenchos: remove_assertions, remove_assumptions, collect_assumptions, parse_arguments, collect_assertions, collect_unique_variables, parse_body, parse_function
+import Elenchos
 @Test.testset "Test macro" begin
     function_definition = quote
         function max(x::Real, y::Real)

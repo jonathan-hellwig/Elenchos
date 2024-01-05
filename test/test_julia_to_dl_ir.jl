@@ -1,5 +1,10 @@
 import Test
-using MacroTools, Elenchos
+using MacroTools
+import Elenchos
+using Elenchos: program_to_dl_ir, formula_to_dl_ir, expression_to_dl_ir
+using Elenchos: DlReal, DlSymbol, DlTest, BoolTrue, BoolFalse, Less, GreaterOrEqual, NotEqual, LessOrEqual, Greater, Equal, And, Or, Not, Plus, Minus, Mult, Div, Assignment, Sequential, Choice, Empty
+using Elenchos: symbol, plus, minus, mult, div, real, less_or_equal, greater_or_equal, less, greater, equal, not_equal, and, or, not, bool_true, bool_false, assign, choice, sequential, dl_test
+using Elenchos: Program, Expression, Formula, ExpressionSymbol, FormulaSymbol, ProgramSymbol
 
 @Test.testset "Test program_to_dl_ir" begin
     program = Base.remove_linenums!(
