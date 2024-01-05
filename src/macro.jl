@@ -1,3 +1,5 @@
+export @elenchos
+
 using MacroTools
 # TODO: Check macro hygiene
 # TODO: Clean up exports

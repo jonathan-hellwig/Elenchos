@@ -252,8 +252,9 @@ function control_system(x::Real, a::Real, b::Real, T::Integer)
     @assert 0 <= x
 end
 
-# Example code
-@trace function max(x::Real, y::Real)
+using Elenchos
+
+kyx_string = @elenchos function max(x::Real, y::Real)
     @assume 0 <= x && 0 <= y
     if x >= y
         max_value = x
@@ -263,5 +264,6 @@ end
     
     @assert max_value >= x && max_value >= y
     @assert max_value == x || max_value == y
-    return max_value
 end
+
+println(kyx_string)

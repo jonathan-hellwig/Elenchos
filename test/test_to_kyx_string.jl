@@ -46,21 +46,3 @@ end
     @Test.test to_kyx_file_string([], [], [], Empty()) == "ArchiveEntry \"test.kyx\"\n   ProgramVariables\n\n   End.\n   Problem\n      (true) -> [{}] (false)\n   End.\nEnd."
 end
 
-
-# # Integration test
-
-# function_definition = quote
-#     function max(x::Real, y::Real)
-#         @assume 0 <= x && 0 <= y
-#         if x >= y
-#             max_value = x
-#         else
-#             max_value = y
-#         end
-        
-#         @assert max_value >= x && max_value >= y
-#         @assert max_value == x || max_value == y
-#     end
-# end
-
-
