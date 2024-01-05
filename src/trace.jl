@@ -7,7 +7,7 @@ function parse_function(ex)
     argument_variables = parse_arguments(ex)
     body_variables, program, assumptions, assertions = parse_body(ex)
     variables = union(argument_variables, body_variables)
-    return dL_IR(variables, program, assumptions, assertions)
+    return variables, program, assumptions, assertions
 end
 
 function parse_body(ex::Expr)
@@ -58,13 +58,6 @@ function collect_unique_variables(body::Expr)
     end
 
     return variables
-end
-
-struct dL_IR
-    variables::Set{Tuple{Symbol, Symbol}}
-    program::Expr
-    assumptions::Vector{Expr}
-    assertions::Vector{Expr}
 end
 
 function parse_arguments(ex)
