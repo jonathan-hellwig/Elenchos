@@ -27,7 +27,7 @@ using Elenchos
 
 @Test.test program_to_string(Assignment(DlSymbol(:x), DlReal(1.0))) == "x := 1.0"
 @Test.test program_to_string(Sequential(Assignment(DlSymbol(:x), DlReal(1.0)), Assignment(DlSymbol(:y), DlReal(2.0)))) == "x := 1.0; y := 2.0"
-@Test.test program_to_string(Choice(Assignment(DlSymbol(:x), DlReal(1.0)), Assignment(DlSymbol(:y), DlReal(2.0)))) == "x := 1.0 ∪ y := 2.0"
+@Test.test program_to_string(Choice(Assignment(DlSymbol(:x), DlReal(1.0)), Assignment(DlSymbol(:y), DlReal(2.0)))) == "{x := 1.0 ∪ y := 2.0}"
 @Test.test program_to_string(DlTest(BoolTrue())) == "?(true)"
 
 @Test.test program_to_string(Empty()) == ""
