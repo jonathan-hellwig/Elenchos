@@ -1,5 +1,5 @@
 module Elenchos
-    include("trace.jl")
+    include("macro.jl")
     include("dl_ir.jl")
     include("utils.jl")
 end
