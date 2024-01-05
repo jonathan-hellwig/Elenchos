@@ -92,7 +92,7 @@ function expression_to_dl_ir(expression)
     return kyx_expression
 end
 
-#TODO: Allow for the usage of true and false
+#TODO: Support formulas like 0 <= x <= 1
 function formula_to_dl_ir(formula)
     symbol_to_formula = Dict(
         :<= => less_or_equal,
