@@ -210,7 +210,7 @@ function program_to_string(program::Program)
     if program.symbol == assign
         return "$(expression_to_string(program.expressions[1])) " * symbol_to_string[program.symbol] * " $(expression_to_string(program.expressions[2]))"
     elseif program.symbol == choice
-        return "$(program_to_string(program.first_programs)) " * symbol_to_string[program.symbol] * " $(program_to_string(program.second_programs))"
+        return "{$(program_to_string(program.first_programs)) " * symbol_to_string[program.symbol] * " $(program_to_string(program.second_programs))}"
     elseif program.symbol == sequential
         return "$(program_to_string(program.first_programs))" * symbol_to_string[program.symbol] * " $(program_to_string(program.second_programs))"
     elseif program.symbol == dl_test
