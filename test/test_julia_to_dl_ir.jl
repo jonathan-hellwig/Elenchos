@@ -1,7 +1,7 @@
 import Test
 using MacroTools, Elenchos
 
-begin
+@Test.testset "Test program_to_dl_ir" begin
     program = Base.remove_linenums!(
         quote
         end
@@ -30,7 +30,7 @@ begin
     )
 end
 
-begin
+@Test.testset "Test formula_to_dl_ir" begin
     formula = :(true)
     @Test.test formula_to_dl_ir(formula) == BoolTrue()
 
@@ -65,7 +65,7 @@ begin
     @Test.test formula_to_dl_ir(formula) == Not(LessOrEqual(Expression(Elenchos.real, 0.0, nothing), Expression(symbol, :x, nothing)))
 end
 
-begin
+@Test.testset "Test expression_to_dl_ir" begin
     expression = :(1.0 + 1.2)
     @Test.test expression_to_dl_ir(expression) == Expression(plus, Expression(Elenchos.real, 1.0, nothing), Expression(Elenchos.real, 1.2, nothing))
 
