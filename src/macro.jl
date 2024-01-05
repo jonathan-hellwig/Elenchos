@@ -1,6 +1,6 @@
 using MacroTools
-# TODO: Translate dL_IR into a kyx file
 # TODO: Check macro hygiene
+# TODO: Clean up exports
 
 function parse_function(ex)
     # TODO: Use the functions below to parse the expression into a dL_IR
@@ -86,4 +86,14 @@ function collect_assertions(ex)
     return assertions
 end
 
-export parse_function, parse_body, collect_assumptions, remove_assertions, remove_assumptions, collect_unique_variables, dL_IR, parse_arguments, collect_assertions
+include("to_kyx_string.jl")
+
+macro elenchos(function_definition)
+    variables, program, assumptions, assertions = parse_function(function_definition)
+    program_ir = program_to_dl_ir(program)
+    assumptions_ir = map(x -> formula_to_dl_ir(x), assumptions)
+    assertions_ir = map(x -> formula_to_dl_ir(x), assertions)
+    return to_kyx_file_string(variables, assumptions_ir, assertions_ir, program_ir)
+end
+
+export parse_function, parse_body, collect_assumptions, remove_assertions, remove_assumptions, collect_unique_variables, parse_arguments, collect_assertions
