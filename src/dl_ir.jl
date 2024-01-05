@@ -127,7 +127,7 @@ function formula_to_kyx(formula)
 
 end
 
-# TODO: Add the empty program
+# TODO: Add error handling for unsupported programs, e.g. if there are more than 2 branches in a choice, or if the program uses return
 function program_to_kyx(program)
     if program.head == :block
         if length(program.args) == 0
@@ -165,7 +165,8 @@ function expression_to_string(expression::Expression)
         Elenchos.div => "/"
     )
     if expression.symbol == symbol
-        return "$(expression.left)"
+        #TODO: Handle the edge cases, e.g., x_1, x_2, etc.
+        return snake_case_to_camel_case("$(expression.left)")
     elseif expression.symbol == Elenchos.real
         return "$(expression.left)"
     elseif expression.symbol in [plus, minus, mult, Elenchos.div]
