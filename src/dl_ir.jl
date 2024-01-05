@@ -215,6 +215,8 @@ function program_to_string(program::Program)
         return "$(program_to_string(program.first_programs))" * symbol_to_string[program.symbol] * " $(program_to_string(program.second_programs))"
     elseif program.symbol == dl_test
         return symbol_to_string[program.symbol] * "($(formula_to_string(program.formula)))"
+    elseif program.symbol == empty
+        return ""
     end
 end
 
