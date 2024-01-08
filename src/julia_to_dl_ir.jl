@@ -187,3 +187,20 @@ function get_variables(expression::Expression)
     end
     return Set()
 end
+
+function get_modified_variables(program::Program)
+    result = Set()
+    if program.symbol == assign
+        push!(result, program.expressions[1].left)
+        return result
+    elseif program.symbol == choice
+        result = union(result, get_modified_variables(program.first_programs))
+        result = union(result, get_modified_variables(program.second_programs))
+        return result
+    elseif program.symbol == sequential
+        result = union(result, get_modified_variables(program.first_programs))
+        result = union(result, get_modified_variables(program.second_programs))
+        return result
+    end
+    return Set()
+end
