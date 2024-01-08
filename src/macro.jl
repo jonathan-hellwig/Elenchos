@@ -3,32 +3,31 @@ export @elenchos
 using MacroTools
 
 function parse_function(ex)
-    argument_variables = parse_arguments(ex)
-    body_variables, program, assumptions, assertions = parse_body(ex)
+    @capture(ex, (function f_(xs__) body_ end) | (f_(xs__) = body_))
+    argument_variables = parse_arguments(xs)
+    body_variables, program, assumptions, assertions = parse_body(body)
     variables = union(argument_variables, body_variables)
     return variables, program, assumptions, assertions
 end
 
-function parse_body(ex::Expr)
-    ex = MacroTools.prewalk(rmlines, ex)
-    assertions = collect_assertions(ex)
-    assumptions = collect_assumptions(ex)
-    variables = collect_unique_variables(ex)
+function parse_body(function_body::Expr)
+    function_body = MacroTools.prewalk(rmlines, function_body)
+    assertions = collect_assertions(function_body)
+    assumptions = collect_assumptions(function_body)
+    variables = collect_unique_variables(function_body)
 
-    @capture(ex, (function f_(xs__) program_ end) | (f_(xs__) = program_))
-    program = remove_assertions(program)
+    program = remove_assertions(function_body)
     program = remove_assumptions(program)
 
     return variables, program, assumptions, assertions
 end
 
 
-function collect_assumptions(ex::Expr)
+function collect_assumptions(function_body)
     # TODO: Make sure that the assumptions are stated in the first line of the function
     # TODO: Make this work if assumptions are nested in if statements or loops
-    @capture(ex, (function f_(xs__) body_ end) | (f_(xs__) = body_))
     assumptions = Vector{Expr}()
-    for x in body.args
+    for x in function_body.args
         if isa(x, Expr) && @capture(x, @assume q_)
             push!(assumptions, q)
         end
@@ -60,25 +59,22 @@ function collect_unique_variables(body::Expr)
     return variables
 end
 
-function parse_arguments(ex)
+function parse_arguments(arguments)
     #TODO: Check whether this is robust
-    @capture(ex, (function f_(xs__) body_ end) | (f_(xs__) = body_))
-
     variables = Set{Tuple{Symbol, Symbol}}()
-    for x in xs
+    for x in arguments
         @capture(x, y_::t_)
         push!(variables, (y, t))
     end
     return variables
 end
 
-function collect_assertions(ex)
-    @capture(ex, (function f_(xs__) body_ end) | (f_(xs__) = body_))
+function collect_assertions(function_body)
     # TODO: Make sure that the assertions are stated in the first line of the function
     # This does not work if assertions are nested in if statements
     last_is_true = false
     assertions = [[]]
-    for x in body.args
+    for x in function_body.args
         if isa(x, Expr) && @capture(x, @assert q_) && !last_is_true
             push!(assertions, [q])
             last_is_true = true
@@ -91,11 +87,10 @@ function collect_assertions(ex)
     return assertions
 end
 
-function collect_programs(ex) 
-    @capture(ex, (function f_(xs__) body_ end) | (f_(xs__) = body_))
+function collect_programs(function_body) 
     last_is_true = false
     programs = [[]]
-    for x in body.args
+    for x in function_body.args
         if isa(x, Expr) && @capture(x, @assert q_) && !last_is_true
             push!(programs, [])
             last_is_true = true

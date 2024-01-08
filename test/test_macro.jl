@@ -18,7 +18,7 @@ Test.@testset "Test macro" begin
         end
     end
     function_definition = MacroTools.prewalk(rmlines, function_definition)
-
+    arguments = [:(x::Real), :(y::Real)]
     body = quote
         @assume 0 <= x && 0 <= y
         if x >= y
@@ -76,15 +76,15 @@ Test.@testset "Test macro" begin
 
 
 
-    Test.@test collect_assumptions(function_definition) == assumptions
-    Test.@test parse_arguments(function_definition) == argument_variables
-    Test.@test collect_assertions(function_definition) == assertions
+    Test.@test collect_assumptions(body) == assumptions
+    Test.@test parse_arguments(arguments) == argument_variables
+    Test.@test collect_assertions(body) == assertions
     Test.@test remove_assertions(body) == body_without_assertions
     Test.@test remove_assumptions(body) == body_without_assumption
-    Test.@test collect_unique_variables(function_definition) == body_variables
+    Test.@test collect_unique_variables(body) == body_variables
 
 
-    result = parse_body(function_definition)
+    result = parse_body(body)
     Test.@test result[1] == body_variables
     Test.@test result[2] == body_wihout_assumptions_and_assertions
     Test.@test result[3] == assumptions
@@ -103,7 +103,7 @@ Test.@testset "Test macro" begin
         function f()
         end
     end
-
+    arguments = []
     body = quote end
     body = MacroTools.prewalk(rmlines, body)
 
@@ -117,15 +117,15 @@ Test.@testset "Test macro" begin
 
 
 
-    Test.@test collect_assumptions(empty_function) == assumptions
-    Test.@test parse_arguments(empty_function) == argument_variables
-    Test.@test collect_assertions(empty_function) == assertions
-    Test.@test collect_unique_variables(empty_function) == body_variables
+    Test.@test collect_assumptions(body) == assumptions
+    Test.@test parse_arguments(arguments) == argument_variables
+    Test.@test collect_assertions(body) == assertions
+    Test.@test collect_unique_variables(body) == body_variables
     Test.@test remove_assertions(body) == body_without_assertions
     Test.@test remove_assumptions(body) == body_without_assumption
 
 
-    result = parse_body(empty_function)
+    result = parse_body(body)
     Test.@test result[1] == body_variables
     Test.@test result[2] == body_wihout_assumptions_and_assertions
     Test.@test result[3] == assumptions
@@ -141,46 +141,38 @@ end
 
 Test.@testset "Test collect_assertions and collect_programs" begin
     function_body = Base.remove_linenums!(quote
-        function f()
             @assert true
             @assert x == 2
             x = 1
             @assert x == 2
             @assert x == 1
-        end
     end)
 
     Test.@test collect_assertions(function_body) == [[], [true, :(x == 2)], [:(x == 2), :(x == 1)]]
     Test.@test collect_programs(function_body) == [[], [:(x = 1)], []]
 
     function_body = Base.remove_linenums!(quote
-        function f()
             @assert true
             x = 1
             @assert x == 2
-        end
     end)
 
     Test.@test collect_assertions(function_body) == [[], [true], [:(x == 2)]]
     Test.@test collect_programs(function_body) == [[], [:(x = 1)], []]
 
     function_body = Base.remove_linenums!(quote
-        function f()
             @assert true
             @assert x == 2
             @assert x == 1
-        end
     end)
 
     Test.@test collect_assertions(function_body) == [[], [true, :(x == 2), :(x == 1)]]
     Test.@test collect_programs(function_body) == [[], []]
 
     function_body = Base.remove_linenums!(quote
-        function f()
             x = 1
             x = 2
             x = 3
-        end
     end)
 
     Test.@test collect_assertions(function_body) == [[]]
