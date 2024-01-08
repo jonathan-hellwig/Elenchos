@@ -3,7 +3,6 @@ export @elenchos
 using MacroTools
 
 function parse_function(ex)
-    # TODO: Use the functions below to parse the expression into a dL_IR
     argument_variables = parse_arguments(ex)
     body_variables, program, assumptions, assertions = parse_body(ex)
     variables = union(argument_variables, body_variables)
@@ -26,6 +25,7 @@ end
 
 function collect_assumptions(ex::Expr)
     # TODO: Make sure that the assumptions are stated in the first line of the function
+    # TODO: Make this work if assumptions are nested in if statements or loops
     @capture(ex, (function f_(xs__) body_ end) | (f_(xs__) = body_))
     assumptions = Vector{Expr}()
     for x in body.args
@@ -73,17 +73,40 @@ function parse_arguments(ex)
 end
 
 function collect_assertions(ex)
+    @capture(ex, (function f_(xs__) body_ end) | (f_(xs__) = body_))
     # TODO: Make sure that the assertions are stated in the first line of the function
     # This does not work if assertions are nested in if statements
-    @capture(ex, (function f_(xs__) body_ end) | (f_(xs__) = body_))
-    assertions = Vector{Expr}()
+    last_is_true = false
+    assertions = [[]]
     for x in body.args
-        if isa(x, Expr) && @capture(x, @assert q_)
-            push!(assertions, q)
+        if isa(x, Expr) && @capture(x, @assert q_) && !last_is_true
+            push!(assertions, [q])
+            last_is_true = true
+        elseif isa(x, Expr) && @capture(x, @assert q_) && last_is_true
+            push!(assertions[end], q)
+        else
+            last_is_true = false
         end
     end
     return assertions
 end
+
+function collect_programs(ex) 
+    @capture(ex, (function f_(xs__) body_ end) | (f_(xs__) = body_))
+    last_is_true = false
+    programs = [[]]
+    for x in body.args
+        if isa(x, Expr) && @capture(x, @assert q_) && !last_is_true
+            push!(programs, [])
+            last_is_true = true
+        elseif !(isa(x, Expr) && @capture(x, @assert q_))
+            push!(programs[end], x)
+            last_is_true = false
+        end
+    end
+    return programs
+end
+
 
 include("to_kyx_string.jl")
 
