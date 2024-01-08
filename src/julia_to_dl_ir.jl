@@ -126,7 +126,7 @@ function formula_to_dl_ir(formula)
     return kyx_formula
 
 end
-
+# TODO: Support return statements
 # TODO: Add error handling for unsupported programs, e.g. if there are more than 2 branches in a choice, or if the program uses return
 function program_to_dl_ir(program)
     if program.head == :block
@@ -155,4 +155,35 @@ function program_to_dl_ir(program)
         kyx_program = Assignment(expression_to_dl_ir(program.args[1]), expression_to_dl_ir(program.args[2]))
     end
     return kyx_program
+end
+
+function get_variables(formula::Formula)
+    result = Set()
+    if formula.symbol == less_or_equal || formula.symbol == greater_or_equal || formula.symbol == less || formula.symbol == greater || formula.symbol == equal || formula.symbol == not_equal
+        result = union(result, get_variables(formula.first_expressions))
+        result = union(result, get_variables(formula.second_expressions))
+        return result
+    elseif formula.symbol == and || formula.symbol == or
+        result = union(result, get_variables(formula.first_subformula))
+        result = union(result, get_variables(formula.second_subformula))
+        return result
+    elseif formula.symbol == not
+        result = union(result, get_variables(formula.first_subformula))
+        return result
+    end
+    return Set()
+
+end
+
+function get_variables(expression::Expression)
+    result = Set()
+    if expression.symbol == symbol
+        push!(result, expression.left)
+        return result
+    elseif expression.symbol in [plus, minus, mult, div]
+        result = union(result, get_variables(expression.left))
+        result = union(result, get_variables(expression.right))
+        return result
+    end
+    return Set()
 end

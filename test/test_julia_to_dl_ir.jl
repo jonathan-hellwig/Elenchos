@@ -5,6 +5,7 @@ using Elenchos: program_to_dl_ir, formula_to_dl_ir, expression_to_dl_ir
 using Elenchos: DlReal, DlSymbol, DlTest, BoolTrue, BoolFalse, Less, GreaterOrEqual, NotEqual, LessOrEqual, Greater, Equal, And, Or, Not, Plus, Minus, Mult, Div, Assignment, Sequential, Choice, Empty
 using Elenchos: symbol, plus, minus, mult, div, real, less_or_equal, greater_or_equal, less, greater, equal, not_equal, and, or, not, bool_true, bool_false, assign, choice, sequential, dl_test
 using Elenchos: Program, Expression, Formula, ExpressionSymbol, FormulaSymbol, ProgramSymbol
+using Elenchos: get_variables
 
 @Test.testset "Test program_to_dl_ir" begin
     program = Base.remove_linenums!(
@@ -121,4 +122,28 @@ end
 
     expression = :(x)
     @Test.test expression_to_dl_ir(expression) == Expression(symbol, :x, nothing)
+end
+
+@Test.testset "Test get_variables" begin
+    @Test.test get_variables(DlReal(0.0)) == Set()
+    @Test.test get_variables(DlSymbol(:x)) == Set([:x])
+    @Test.test get_variables(Plus(DlReal(0.0), DlSymbol(:x))) == Set([:x])
+    @Test.test get_variables(Plus(DlSymbol(:x), DlReal(0.0))) == Set([:x])
+    @Test.test get_variables(Plus(DlSymbol(:x), DlSymbol(:y))) == Set([:x, :y])
+    @Test.test get_variables(Plus(DlReal(0.0), Plus(DlSymbol(:x), DlSymbol(:y)))) == Set([:x, :y])
+    @Test.test get_variables(Minus(DlReal(0.0), DlSymbol(:x))) == Set([:x])
+    @Test.test get_variables(Div(DlReal(0.0), DlSymbol(:x))) == Set([:x])
+    @Test.test get_variables(Mult(DlReal(0.0), DlSymbol(:x))) == Set([:x])
+
+    @Test.test get_variables(BoolTrue()) == Set()
+    @Test.test get_variables(BoolFalse()) == Set()
+    @Test.test get_variables(LessOrEqual(DlReal(0.0), DlSymbol(:x))) == Set([:x])
+    @Test.test get_variables(GreaterOrEqual(DlReal(0.0), DlSymbol(:x))) == Set([:x])
+    @Test.test get_variables(Less(DlReal(0.0), DlSymbol(:x))) == Set([:x])
+    @Test.test get_variables(Greater(DlReal(0.0), DlSymbol(:x))) == Set([:x])
+    @Test.test get_variables(Equal(DlReal(0.0), DlSymbol(:x))) == Set([:x])
+    @Test.test get_variables(NotEqual(DlReal(0.0), DlSymbol(:x))) == Set([:x])
+    @Test.test get_variables(And(BoolTrue(), BoolFalse())) == Set()
+    @Test.test get_variables(Or(BoolTrue(), BoolFalse())) == Set()
+    @Test.test get_variables(Not(BoolTrue())) == Set()
 end
