@@ -167,7 +167,6 @@ Test.@testset "Test collect_assertions and collect_programs" begin
     Test.@test collect_assertions(function_body) == [[:(true)], [:(y == 1), :(x == 1)]]
     Test.@test collect_lines(function_body) == [[]]
 
-
     function_body = Base.remove_linenums!(quote
         @assert y == 1
         x = 1
@@ -177,7 +176,6 @@ Test.@testset "Test collect_assertions and collect_programs" begin
 
     Test.@test collect_assertions(function_body) == [[:(y == 1)], [:(y == 1), :(x == 1)]]
     Test.@test collect_lines(function_body) == [[:(x = 1)]]
-
 
     function_body = Base.remove_linenums!(quote
         @assert y == 1
