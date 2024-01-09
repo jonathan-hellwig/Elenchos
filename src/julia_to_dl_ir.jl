@@ -204,3 +204,118 @@ function get_modified_variables(program::Program)
     end
     return Set()
 end
+
+function Base.show(io::IO, expression::Expression)
+    if expression.symbol == plus
+        print(io, "(")
+        print(io, expression.left)
+        print(io, " + ")
+        print(io, expression.right)
+        print(io, ")")
+    elseif expression.symbol == minus
+        print(io, "(")
+        print(io, expression.left)
+        print(io, " - ")
+        print(io, expression.right)
+        print(io, ")")
+    elseif expression.symbol == mult
+        print(io, "(")
+        print(io, expression.left)
+        print(io, " * ")
+        print(io, expression.right)
+        print(io, ")")
+    elseif expression.symbol == div
+        print(io, "(")
+        print(io, expression.left)
+        print(io, " / ")
+        print(io, expression.right)
+        print(io, ")")
+    elseif expression.symbol == real
+        print(io, expression.left)
+    elseif expression.symbol == symbol
+        print(io, expression.left)
+    end
+end
+
+# Formulas:
+function Base.show(io::IO, formula::Formula)
+    if formula.symbol == less_or_equal
+        print(io, "(")
+        print(io, formula.first_expressions)
+        print(io, " <= ")
+        print(io, formula.second_expressions)
+        print(io, ")")
+    elseif formula.symbol == greater_or_equal
+        print(io, "(")
+        print(io, formula.first_expressions)
+        print(io, " >= ")
+        print(io, formula.second_expressions)
+        print(io, ")")
+    elseif formula.symbol == less
+        print(io, "(")
+        print(io, formula.first_expressions)
+        print(io, " < ")
+        print(io, formula.second_expressions)
+        print(io, ")")
+    elseif formula.symbol == greater
+        print(io, "(")
+        print(io, formula.first_expressions)
+        print(io, " > ")
+        print(io, formula.second_expressions)
+        print(io, ")")
+    elseif formula.symbol == equal
+        print(io, "(")
+        print(io, formula.first_expressions)
+        print(io, " == ")
+        print(io, formula.second_expressions)
+        print(io, ")")
+    elseif formula.symbol == not_equal
+        print(io, "(")
+        print(io, formula.first_expressions)
+        print(io, " != ")
+        print(io, formula.second_expressions)
+        print(io, ")")
+    elseif formula.symbol == and
+        print(io, "(")
+        print(io, formula.first_subformula)
+        print(io, " & ")
+        print(io, formula.second_subformula)
+        print(io, ")")
+    elseif formula.symbol == or
+        print(io, "(")
+        print(io, formula.first_subformula)
+        print(io, " | ")
+        print(io, formula.second_subformula)
+        print(io, ")")
+    elseif formula.symbol == not
+        print(io, "!(")
+        print(io, formula.first_subformula)
+        print(io, ")")
+    elseif formula.symbol == bool_true
+        print(io, "true")
+    elseif formula.symbol == bool_false
+        print(io, "false")
+    end
+end
+
+# Programs:
+function Base.show(io::IO, program::Program)
+    if program.symbol == assign
+        print(io, program.expressions[1].left)
+        print(io, " := ")
+        print(io, program.expressions[2])
+    elseif program.symbol == choice
+        print(io, "(","(", program.first_programs, ")")
+        print(io, " ∪ ")
+        print(io, "(", program.second_programs, ")",")")
+    elseif program.symbol == sequential
+        print(io, program.first_programs)
+        print(io, "; ")
+        print(io, program.second_programs)
+    elseif program.symbol == dl_test
+        print(io, "?")
+        print(io, program.formula)
+    elseif program.symbol == empty
+        print(io, "ε")
+    end
+end
