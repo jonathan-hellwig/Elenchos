@@ -1,3 +1,7 @@
+# TODO: Make the code runnable
+# TODO: Add loops
+# TODO: Add nondeterministic assignments
+
 # I do not want to stop execution when an assertion fails. 
 # I just want to return a simulation trace for visualization purposes.
 macro assume(e, trace...)
@@ -254,8 +258,8 @@ end
 
 using Elenchos
 
-kyx_string = @elenchos function max(x::Real, y::Real)
-    @assume 0 <= x && 0 <= y
+@elenchos function max(x::Real, y::Real)
+    @assert 0 <= x && 0 <= y
     if x >= y
         max_value = x
     else
@@ -266,4 +270,22 @@ kyx_string = @elenchos function max(x::Real, y::Real)
     @assert max_value == x || max_value == y
 end
 
-println(kyx_string)
+using Elenchos
+@elenchos function max(x::Real, y::Real)
+    @assert 0 <= x && 0 <= y
+    if x >= y
+        max_value = x
+    else
+        max_value = y
+    end
+    @assert max_value >= x && max_value >= y
+    max_value = max_value + 1
+    @assert max_value >= x && max_value >= y
+end
+
+@elenchos function simulate()
+    @assert 0 <= x && x <= y
+    u = x_y_max
+    @assert u == y
+    @assert u >= x && u >= y
+end

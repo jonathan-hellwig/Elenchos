@@ -5,7 +5,7 @@ using Elenchos: program_to_dl_ir, formula_to_dl_ir, expression_to_dl_ir
 using Elenchos: DlReal, DlSymbol, DlTest, BoolTrue, BoolFalse, Less, GreaterOrEqual, NotEqual, LessOrEqual, Greater, Equal, And, Or, Not, Plus, Minus, Mult, Div, Assignment, Sequential, Choice, Empty
 using Elenchos: symbol, plus, minus, mult, div, real, less_or_equal, greater_or_equal, less, greater, equal, not_equal, and, or, not, bool_true, bool_false, assign, choice, sequential, dl_test
 using Elenchos: Program, Expression, Formula, ExpressionSymbol, FormulaSymbol, ProgramSymbol
-using Elenchos: get_variables
+using Elenchos: get_variables, get_modified_variables
 
 @Test.testset "Test program_to_dl_ir" begin
     program = Base.remove_linenums!(
@@ -34,6 +34,29 @@ using Elenchos: get_variables
             Empty()
         )
     )
+    program = Base.remove_linenums!(quote
+        if x >= y
+            max_value = x
+        else
+            max_value = y
+        end
+    end)
+    @Test.test program_to_dl_ir(program) == Sequential(Choice(
+        Sequential(
+            DlTest(GreaterOrEqual(Expression(symbol, :x, nothing), Expression(symbol, :y, nothing))),
+            Sequential(
+                Assignment(DlSymbol(:max_value), Expression(symbol, :x, nothing)),
+                Empty()
+            )
+        ),
+        Sequential(
+            DlTest(Not(GreaterOrEqual(Expression(symbol, :x, nothing), Expression(symbol, :y, nothing)))),
+            Sequential(
+                Assignment(DlSymbol(:max_value), Expression(symbol, :y, nothing)),
+                Empty()
+            )
+        )
+    ), Empty())
 end
 
 @Test.testset "Test formula_to_dl_ir" begin
@@ -146,4 +169,9 @@ end
     @Test.test get_variables(And(BoolTrue(), BoolFalse())) == Set()
     @Test.test get_variables(Or(BoolTrue(), BoolFalse())) == Set()
     @Test.test get_variables(Not(BoolTrue())) == Set()
+end
+
+@Test.testset "Test get_modified_variables" begin
+    @Test.test get_modified_variables(Sequential(Assignment(DlSymbol(:x), DlReal(1)), Empty())) == Set([:x])
+    @Test.test get_modified_variables(Choice(Sequential(Assignment(DlSymbol(:x), DlReal(1)), Empty()), Sequential(Assignment(DlSymbol(:y), DlReal(1)), Empty()))) == Set([:x, :y])
 end
