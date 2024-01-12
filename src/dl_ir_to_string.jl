@@ -2,17 +2,17 @@ include("julia_to_dl_ir.jl")
 
 function expression_to_string(expression::Expression)
     symbol_to_string = Dict(
-        plus => "+",
-        minus => "-",
-        mult => "*",
-        Elenchos.div => "/"
+        PLUS => "+",
+        MINUS => "-",
+        MULT => "*",
+        Elenchos.DIV => "/"
     )
-    if expression.symbol == symbol
+    if expression.symbol == SYMBOL
         #TODO: Handle the edge cases, e.g., x_1, x_2, etc.
         return snake_case_to_camel_case("$(expression.left)")
-    elseif expression.symbol == Elenchos.real
+    elseif expression.symbol == Elenchos.REAL
         return "$(expression.left)"
-    elseif expression.symbol in [plus, minus, mult, Elenchos.div]
+    elseif expression.symbol in [PLUS, MINUS, MULT, Elenchos.DIV]
         return "$(expression_to_string(expression.left)) " * symbol_to_string[expression.symbol] * " $(expression_to_string(expression.right))"
     end
 end

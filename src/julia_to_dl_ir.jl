@@ -1,16 +1,16 @@
-@enum ExpressionSymbol plus minus mult div real symbol
+@enum ExpressionSymbol PLUS MINUS MULT DIV REAL SYMBOL
 
 struct Expression
     symbol::ExpressionSymbol
     left::Union{Expression,Symbol,Real}
     right::Union{Expression,Nothing}
 end
-Plus(left::Union{Expression,Symbol,Real}, right::Union{Expression,Symbol,Real}) = Expression(plus, left, right)
-Minus(left::Union{Expression,Symbol,Real}, right::Union{Expression,Symbol,Real}) = Expression(minus, left, right)
-Mult(left::Union{Expression,Symbol,Real}, right::Union{Expression,Symbol,Real}) = Expression(mult, left, right)
-Div(left::Union{Expression,Symbol,Real}, right::Union{Expression,Symbol,Real}) = Expression(div, left, right)
-DlReal(value::Real) = Expression(real, value, nothing)
-DlSymbol(dlsymbol::Symbol) = Expression(symbol, dlsymbol, nothing)
+Plus(left::Union{Expression,Symbol,Real}, right::Union{Expression,Symbol,Real}) = Expression(PLUS, left, right)
+Minus(left::Union{Expression,Symbol,Real}, right::Union{Expression,Symbol,Real}) = Expression(MINUS, left, right)
+Mult(left::Union{Expression,Symbol,Real}, right::Union{Expression,Symbol,Real}) = Expression(MULT, left, right)
+Div(left::Union{Expression,Symbol,Real}, right::Union{Expression,Symbol,Real}) = Expression(DIV, left, right)
+DlReal(value::Real) = Expression(REAL, value, nothing)
+DlSymbol(dlsymbol::Symbol) = Expression(SYMBOL, dlsymbol, nothing)
 
 @enum FormulaSymbol less_or_equal greater_or_equal less greater equal not_equal and or not bool_true bool_false
 """
@@ -63,9 +63,9 @@ DlTest(formula::Formula) = Program(dl_test, nothing, nothing, formula, nothing)
 
 function expression_to_dl_ir(expression)
     if isa(expression, Real)
-        return Expression(real, expression, nothing)
+        return Expression(REAL, expression, nothing)
     elseif isa(expression, Symbol)
-        return Expression(symbol, expression, nothing)
+        return Expression(SYMBOL, expression, nothing)
     end
     if expression.head != :call
         error("Not a call expression!")
@@ -73,19 +73,19 @@ function expression_to_dl_ir(expression)
 
     expression_symbol = expression.args[1]
     if expression_symbol == :+
-        kyx_expression = Expression(plus, expression_to_dl_ir(expression.args[2]), expression_to_dl_ir(expression.args[3]))
+        kyx_expression = Expression(PLUS, expression_to_dl_ir(expression.args[2]), expression_to_dl_ir(expression.args[3]))
         for i in 4:length(expression.args)
-            kyx_expression = Expression(plus, kyx_expression, expression_to_dl_ir(expression.args[i]))
+            kyx_expression = Expression(PLUS, kyx_expression, expression_to_dl_ir(expression.args[i]))
         end
     elseif expression_symbol == :-
-        kyx_expression = Expression(minus, expression_to_dl_ir(expression.args[2]), expression_to_dl_ir(expression.args[3]))
+        kyx_expression = Expression(MINUS, expression_to_dl_ir(expression.args[2]), expression_to_dl_ir(expression.args[3]))
     elseif expression_symbol == :*
-        kyx_expression = Expression(mult, expression_to_dl_ir(expression.args[2]), expression_to_dl_ir(expression.args[3]))
+        kyx_expression = Expression(MULT, expression_to_dl_ir(expression.args[2]), expression_to_dl_ir(expression.args[3]))
         for i in 4:length(expression.args)
-            kyx_expression = Expression(mult, kyx_expression, expression_to_dl_ir(expression.args[i]))
+            kyx_expression = Expression(MULT, kyx_expression, expression_to_dl_ir(expression.args[i]))
         end
     elseif expression_symbol == :/
-        kyx_expression = Expression(div, expression_to_dl_ir(expression.args[2]), expression_to_dl_ir(expression.args[3]))
+        kyx_expression = Expression(DIV, expression_to_dl_ir(expression.args[2]), expression_to_dl_ir(expression.args[3]))
     else
         error("Unknown operator!")
     end
@@ -177,10 +177,10 @@ end
 
 function get_variables(expression::Expression)
     result = Set()
-    if expression.symbol == symbol
+    if expression.symbol == SYMBOL
         push!(result, expression.left)
         return result
-    elseif expression.symbol in [plus, minus, mult, div]
+    elseif expression.symbol in [PLUS, MINUS, MULT, DIV]
         result = union(result, get_variables(expression.left))
         result = union(result, get_variables(expression.right))
         return result
@@ -206,31 +206,31 @@ function get_modified_variables(program::Program)
 end
 
 function Base.show(io::IO, expression::Expression)
-    if expression.symbol == plus
+    if expression.symbol == PLUS
         print(io, "(")
         print(io, expression.left)
         print(io, " + ")
         print(io, expression.right)
         print(io, ")")
-    elseif expression.symbol == minus
+    elseif expression.symbol == MINUS
         print(io, "(")
         print(io, expression.left)
         print(io, " - ")
         print(io, expression.right)
         print(io, ")")
-    elseif expression.symbol == mult
+    elseif expression.symbol == MULT
         print(io, "(")
         print(io, expression.left)
         print(io, " * ")
         print(io, expression.right)
         print(io, ")")
-    elseif expression.symbol == div
+    elseif expression.symbol == DIV
         print(io, "(")
         print(io, expression.left)
         print(io, " / ")
         print(io, expression.right)
         print(io, ")")
-    elseif expression.symbol == real
+    elseif expression.symbol == REAL
         print(io, expression.left)
     elseif expression.symbol == symbol
         print(io, expression.left)
