@@ -1,4 +1,4 @@
 module Elenchos
-    include("macro.jl")
+    include("proof_tree.jl")
     include("utils.jl")
 end
