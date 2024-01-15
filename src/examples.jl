@@ -265,14 +265,14 @@ using Elenchos
     else
         max_value = y
     end
-    
     @assert max_value >= x && max_value >= y
     @assert max_value == x || max_value == y
 end
 
 using Elenchos
+# The splitting implementation is equivalent to a cut in KeYmaera X
 @elenchos function max(x::Real, y::Real)
-    @assert 0 <= x && 0 <= y
+    @assert 0 <= x
     if x >= y
         max_value = x
     else
@@ -289,3 +289,93 @@ end
     @assert u == y
     @assert u >= x && u >= y
 end
+
+"""
+Next features: 
+- implement for and while loops
+- implement communication with KeYmaera X server
+- add better error messages for julia expression parsing
+- develop a custom tactic for KeYmaera X to do the branch predicition
+"""
+
+@elenchos function simulate(T::Unsigned)
+    @assert x >= 0 
+    for _ in 1:T
+        x = x + 1
+    end
+    @assert x >= 0
+end
+
+@elenchos function simulate(T::Unsigned)
+    @assert x >= 0 && x * x >= 0
+    for _ in 1:T
+        @assert x >= 0
+        x = x + 1
+
+    end
+    @assert x >= 0
+end
+
+@elenchos function simulate(T::Unsigned)
+    @assert x >= 0 
+    t = 0
+    while t < T
+        x = x + 1
+        t = t + 1
+    end
+    @assert x >= 0
+end
+
+for _ in 1:2
+    @assert x >= 0
+    x = x + 1
+    @assert x >= 0
+end
+
+@assert x >= 0
+x = x + 1
+@assert x >= 0
+@assert x >= 0
+x = x + 1
+@assert x >= 0
+
+for _ in 1:2
+    @assert x >= 0
+    x = x + 1
+end
+
+@assert x >= 0
+x = x + 1
+@assert x >= 0
+x = x + 1
+
+for _ in 1:2
+    # Do invariants have a meaning outside of loops?
+    @invariant x >= 0
+    # @assert x >= 0
+    x = x + 1
+end
+# {x:=x+1;}*@invariant(x>=0)
+
+"""
+Rright now, the deamon test does not split the program into two programs like I would want to do it.
+There are several ways to implement splitting by assertions
+1. Split the program into two subprograms and send them to KeYmaera X -> Trust my code to do the splitting correctly, feedback on the intermediate results
+2. Send the whole program to KeYmaera X and provide a the cut tactic at the appropriate positions -> Get a witness for the whole program, no feedback on the intermediate results
+
+Implementing the first approach allows me to avoid of working with the KeYmaera X codebase.
+
+If I continue to follow this approach, I would need to also implement the loop invariant tactic in Julia.
+"""
+
+x = 0
+begin
+    x = x + 1
+end
+
+"""
+    I need some kind of architecture too keep track of the goal graph.
+    In the end, I want to be able to generate a witness for the whole program,
+    but I also want to be able to generate a witness for each subprogram to have good user feedback.
+    I want to be able to cache the results of the subprograms, so that I do not have to recompute them.
+"""
