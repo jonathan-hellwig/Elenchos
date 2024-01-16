@@ -199,10 +199,11 @@ end
 # It is not enough to just look at the first level of the program to determine if it needs to be split up
 
 using MacroTools
+import Test
 
 abstract type ProofFlowNode end
 
-struct AssertionNode <: ProofFlowNode
+mutable struct AssertionNode <: ProofFlowNode
     assertions::Vector{Union{Expr, Bool}}
     children::Vector{ProofFlowNode}
 end
@@ -275,3 +276,80 @@ function generate_graph(ex)
 end
 
 
+function merge_assertions(root)
+    if isa(root, AssertionNode)
+        children = []
+        for child in root.children
+            if isa(child, AssertionNode)
+                merge_assertions(child)
+                append!(root.assertions, child.assertions)
+                append!(children, child.children)
+            else
+                merge_assertions(child)
+                push!(children, child)
+            end
+        end
+        root.children = children
+    end
+end
+
+function remove_node(root, node)
+    if isa(root, AssertionNode)
+        for child in root.children
+            if child === node
+                pop!(root.children, child)
+            else
+                remove_node(child, node)
+            end
+        end
+    end
+end
+
+# TODO:
+# - merge assertion nodes
+#    - merge two subsequent assertion nodes
+# - merge program nodes
+#    - merge two subsequent program nodes
+#    - do backtracking for branching nodes
+# - translate graph to dl_ir graph
+# Do I need a different data structure for the proof graph?
+
+# Do I really need to merge programs? I could just explore the graph dfs and keep track of the current program
+# It would be nice to have some kind of symbolic execution of the program and have vscode highlight, where the proof failed
+
+struct ProofGoal
+    assumptions::Vector{Formula}
+    assertions::Vector{Formula}
+    program::Program
+end
+
+function preprocess_graph(graph)
+    merge_assertions(graph)
+    # Simplify branching
+    # Handle edge cases
+    return graph
+end
+
+function generate_proof_goals(graph)
+    return [ProofGoal([BoolTrue()], [BoolTrue()], Empty())]
+end
+
+graph = AssertionNode([:(true)], [ProgramNode(:(), [AssertionNode([:(true)], [])])])
+Test.@test generate_proof_goals(graph) == [ProofGoal([BoolTrue()], [BoolTrue()], Empty())]
+
+# How do I encode that a node has been visited?
+
+test = Dict()
+node = AssertionNode([:(true)], [])
+test[node] = true
+
+test[node]
+
+body = quote
+    x = 1
+end
+body = MacroTools.prewalk(rmlines, body)
+test = program_to_dl_ir(body)
+Sequential(test, test)
+
+formula_to_dl_ir(true)

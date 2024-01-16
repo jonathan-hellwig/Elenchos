@@ -39,3 +39,16 @@ Test.@testset "generate_graph" begin
     Test.@test generate_graph(body) == ProgramNode(:(()), ProofFlowNode[AssertionNode([:(true)], ProofFlowNode[])])
 end
 
+
+assertions = AssertionNode([:(true)], [])
+merge_assertions(assertions)
+Test.@test assertions == AssertionNode([:(true)], [])
+
+assertions = AssertionNode([:(true)], [AssertionNode([:(true)], [])])
+merge_assertions(assertions)
+Test.@test assertions == AssertionNode([:(true), :(true)], [])
+
+
+assertions = AssertionNode([:(true)], [AssertionNode([:(true)], [AssertionNode([:(true)], [])])])
+merge_assertions(assertions)
+Test.@test assertions == AssertionNode([:(true), :(true), :(true)], [])
