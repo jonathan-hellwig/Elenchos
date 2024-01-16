@@ -198,6 +198,7 @@ end
 # Do the proof flow graph generation first, and then add additional nodes for the edge cases?
 # It is not enough to just look at the first level of the program to determine if it needs to be split up
 
+using MacroTools
 
 abstract type ProofFlowNode end
 
@@ -228,7 +229,6 @@ function Base.:(==)(x::ProofFlowNode, y::ProofFlowNode)
     end
     return false
 end
-using MacroTools
 
 function parse_ast(ex, parent)
     if isa(ex, Expr)
@@ -267,6 +267,7 @@ function parse_ast(ex, parent)
     end
     error("Not expr ", ex)
 end
+
 function generate_graph(ex)
     root = ProgramNode(:(), [])
     parse_ast(ex, root)
