@@ -232,7 +232,7 @@ function Base.show(io::IO, expression::Expression)
         print(io, ")")
     elseif expression.symbol == REAL
         print(io, expression.left)
-    elseif expression.symbol == symbol
+    elseif expression.symbol == SYMBOL
         print(io, expression.left)
     end
 end
