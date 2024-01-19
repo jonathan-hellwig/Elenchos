@@ -145,6 +145,9 @@ end
 
     expression = :(x)
     @Test.test expression_to_dl_ir(expression) == Expression(SYMBOL, :x, nothing)
+
+    expression = :(-x)
+    @Test.test expression_to_dl_ir(expression) == Expression(MINUS, Expression(SYMBOL, :x, nothing), nothing)
 end
 
 @Test.testset "Test get_variables" begin

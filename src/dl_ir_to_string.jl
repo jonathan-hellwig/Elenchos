@@ -12,7 +12,13 @@ function expression_to_string(expression::Expression)
         return snake_case_to_camel_case("$(expression.left)")
     elseif expression.symbol == Elenchos.REAL
         return "$(expression.left)"
-    elseif expression.symbol in [PLUS, MINUS, MULT, Elenchos.DIV]
+    elseif expression.symbol == MINUS
+        if isnothing(expression.right)
+            return symbol_to_string[expression.symbol] * "$(expression_to_string(expression.left))"
+        else
+            return "$(expression_to_string(expression.left)) " * symbol_to_string[expression.symbol] * " $(expression_to_string(expression.right))"
+        end
+    elseif expression.symbol in [PLUS, MULT, Elenchos.DIV]
         return "$(expression_to_string(expression.left)) " * symbol_to_string[expression.symbol] * " $(expression_to_string(expression.right))"
     end
 end

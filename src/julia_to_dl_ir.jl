@@ -6,7 +6,7 @@ struct Expression
     right::Union{Expression,Nothing}
 end
 Plus(left::Union{Expression,Symbol,Real}, right::Union{Expression,Symbol,Real}) = Expression(PLUS, left, right)
-Minus(left::Union{Expression,Symbol,Real}, right::Union{Expression,Symbol,Real}) = Expression(MINUS, left, right)
+Minus(left::Union{Expression,Symbol,Real}, right::Union{Expression,Symbol,Real,Nothing}) = Expression(MINUS, left, right)
 Mult(left::Union{Expression,Symbol,Real}, right::Union{Expression,Symbol,Real}) = Expression(MULT, left, right)
 Div(left::Union{Expression,Symbol,Real}, right::Union{Expression,Symbol,Real}) = Expression(DIV, left, right)
 DlReal(value::Real) = Expression(REAL, value, nothing)
@@ -78,7 +78,11 @@ function expression_to_dl_ir(expression)
             kyx_expression = Expression(PLUS, kyx_expression, expression_to_dl_ir(expression.args[i]))
         end
     elseif expression_symbol == :-
-        kyx_expression = Expression(MINUS, expression_to_dl_ir(expression.args[2]), expression_to_dl_ir(expression.args[3]))
+        if length(expression.args) == 2
+            kyx_expression = Expression(MINUS, expression_to_dl_ir(expression.args[2]), nothing)
+        else
+            kyx_expression = Expression(MINUS, expression_to_dl_ir(expression.args[2]), expression_to_dl_ir(expression.args[3]))
+        end
     elseif expression_symbol == :*
         kyx_expression = Expression(MULT, expression_to_dl_ir(expression.args[2]), expression_to_dl_ir(expression.args[3]))
         for i in 4:length(expression.args)
@@ -213,11 +217,16 @@ function Base.show(io::IO, expression::Expression)
         print(io, expression.right)
         print(io, ")")
     elseif expression.symbol == MINUS
-        print(io, "(")
-        print(io, expression.left)
-        print(io, " - ")
-        print(io, expression.right)
-        print(io, ")")
+        if isnothing(expression.right)
+            print(io, "-")
+            print(io, expression.left)
+        else
+            print(io, "(")
+            print(io, expression.left)
+            print(io, " - ")
+            print(io, expression.right)
+            print(io, ")")
+        end
     elseif expression.symbol == MULT
         print(io, "(")
         print(io, expression.left)
