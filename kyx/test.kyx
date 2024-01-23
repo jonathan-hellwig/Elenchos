@@ -1,0 +1,12 @@
+﻿ArchiveEntry "sadffasdfwdfdfer"
+ProgramVariables
+    Real x;
+End.
+Problem
+  [x:=1;{x:=x+1;}*]x>=1
+End.
+
+Tactic "Proof"
+auto
+End.
+End.
