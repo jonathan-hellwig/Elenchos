@@ -1,4 +1,4 @@
 module Elenchos
-    include("proof_graph.jl")
+    include("proof_goal.jl")
     include("utils.jl")
 end

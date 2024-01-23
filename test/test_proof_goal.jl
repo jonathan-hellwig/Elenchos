@@ -1,54 +1,60 @@
-using Elenchos: generate_graph, ProofFlowNode, AssertionNode, ProgramNode, BranchNode, merge_assertions
+using Elenchos: extract, propagate_assertions, replace_assertions, build_goal_graph
 import Test
 using MacroTools
 
-Test.@testset "generate_graph" begin
-    body = quote end
-    body = MacroTools.prewalk(rmlines, body)
-    Test.@test generate_graph(body) == ProgramNode(:(), [])
+Test.@testset "Test extract" begin
+    Test.@test extract(:(x = 1)) == (:x, 1.0)
+    Test.@test extract(:(@assert x > 0)) == :(x > 0)
 
-    body = quote
-        x = 1
-    end
-    body = MacroTools.prewalk(rmlines, body)
-    Test.@test generate_graph(body) == ProgramNode(:(), [ProgramNode(:(x = 1), [])])
-
-    body = quote
-        if true
-        else
-        end
-    end
-    body = MacroTools.prewalk(rmlines, body)
-    Test.@test generate_graph(body) == ProgramNode(:(), [BranchNode([:(true)], [])])
-
-    body = quote
-        if true
+    body = quote 
+        if x > 0
             x = 1
         else
-            x = 2
+            x = -1
         end
-        y = 1
     end
-    body = MacroTools.prewalk(rmlines, body)
-    Test.@test generate_graph(body) == ProgramNode(:(()), ProofFlowNode[BranchNode(Union{Bool, Expr}[true], ProofFlowNode[ProgramNode(:(x = 1), ProofFlowNode[ProgramNode(:(y = 1), ProofFlowNode[])]), ProgramNode(:(x = 2), ProofFlowNode[ProgramNode(:(y = 1), ProofFlowNode[])])])])
-
-    body = quote
-        @assert true
-    end
-    body = MacroTools.prewalk(rmlines, body)
-    Test.@test generate_graph(body) == ProgramNode(:(()), ProofFlowNode[AssertionNode([:(true)], ProofFlowNode[])])
+    body = MacroTools.prewalk(rmlines, body).args[1]
+    
+    #TODO: Fix this test
+    # Test.@test extract(body) == :(x > 0), Expr(:block,:(x = 1)), Expr(:block, :(x = -1))
 end
 
+Test.@testset "Test propagate assertions" begin
+    body = quote
+        @assert y < 0
+        x = x + 1
+        if x > 0
+            x = 1
+        else
+            x = -1
+            @assert x < 0
+        end
+        @assert x >= 0
+    end
+    propagate_assertions(body)
+    body = quote
+        @assert y < 0
+        x = x + 1
+        y = -x
+        x = 1
+        @assert x >= 0
+    end
+    result = propagate_assertions(body)
 
-assertions = AssertionNode([:(true)], [])
-merge_assertions(assertions)
-Test.@test assertions == AssertionNode([:(true)], [])
-
-assertions = AssertionNode([:(true)], [AssertionNode([:(true)], [])])
-merge_assertions(assertions)
-Test.@test assertions == AssertionNode([:(true), :(true)], [])
-
-
-assertions = AssertionNode([:(true)], [AssertionNode([:(true)], [AssertionNode([:(true)], [])])])
-merge_assertions(assertions)
-Test.@test assertions == AssertionNode([:(true), :(true), :(true)], [])
+    body = quote
+        @assert y < 0
+        x = x + 1
+        if x > 0
+            x = 1
+        else
+            x = -1
+            @assert x < 0
+        end
+        @assert x >= 0
+    end
+    
+    graph = build_goal_graph(body)[1]
+    assertions = propagate_assertions(body)
+    replace_assertions(graph, assertions)
+    
+end
