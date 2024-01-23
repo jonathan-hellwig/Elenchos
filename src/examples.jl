@@ -379,3 +379,110 @@ end
     but I also want to be able to generate a witness for each subprogram to have good user feedback.
     I want to be able to cache the results of the subprograms, so that I do not have to recompute them.
 """
+
+
+"""
+@elenchos function simulate(T::Unsigned)
+    @invariant x >= 0 
+    for _ in 1:T
+        x = x + 1
+    end
+    @assert x >= 0
+end
+
+ProofGoal([ProofGoalLeaf([:(x >= 0)], [:(x >= 0)], :(x = x + 1))], [ProofGoalLeaf([:(x >= 0)], [:(x >= 0)], :())])
+
+@elenchos function simulate(T::Unsigned)
+    @invariant x >= 0 
+    for _ in 1:T
+        x = x + 1
+        @assert x >= 1
+        x = x + 1
+    end
+    @assert x >= 0
+end
+
+Should I just always translate for _ in 1:T to while true?
+
+ProofGoalNode([ProofGoalNode([ProofGoalLeaf([:(x >= 0)], [:(x >= 1)], :(x = x + 1)), ProofGoalLeaf([:(x >= 1)], [:(x >= 0)], :(x = x + 1))]), ProofGoalLeaf([:(x >= 0)], [:(x >= 0)], :())])
+
+@elenchos function simulate(T::Unsigned)
+    t = 0
+    @invariant x >= 0
+    while t < T
+        t = t + 1
+        x = x + 1
+        @assert x >= 1
+        x = x + 1
+    end
+    @assert x >= 0
+end
+
+
+"""
+
+"""
+for t in 1:10
+end
+
+is not the same as
+
+t = 1
+while t <= 10
+    t = t + 1
+end
+
+What if loops are not used to iterate over a time range?
+
+for x in [1,2,3]
+end
+
+This should not be allowed!
+function sum(x::Real, y::Real)
+    result = 0
+    for s in [x, y]
+        result = s + 1
+    end
+end
+
+I will only support loops of the form:
+
+for _ in 1:T
+end
+
+and translate them to:
+{}*
+"""
+
+"""
+
+What happens in the following case:
+
+@elenchos function simulate(T::Unsigned)
+    @assert x >= 0
+    x = x + 1
+    for _ in 1:T
+        x = x + 1
+        @assert x >= 0
+    end
+    @assert x >= 0
+end
+
+I.e. when there is an assertion in the loop body, but no loop invariant?
+Only support assertion in loop body if there is a loop invariant?
+
+"""
+
+"""@invariant x > 0 for _ in 1:10
+    x = x + 1
+end
+
+@invariant x > 0
+
+@invariant x > 0 x = sum(x, y)
+
+@invariant x > 0 begin
+    x = x + 1
+    x = x * x
+end
+"""
