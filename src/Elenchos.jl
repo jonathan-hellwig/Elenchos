@@ -1,4 +1,3 @@
 module Elenchos
-    include("proof_goal.jl")
-    include("utils.jl")
+    include("macro.jl")
 end

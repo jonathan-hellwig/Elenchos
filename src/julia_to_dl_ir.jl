@@ -157,6 +157,8 @@ function program_to_dl_ir(program)
         kyx_program = Choice(first_choice, second_choice)
     elseif program.head == :(=)
         kyx_program = Assignment(expression_to_dl_ir(program.args[1]), expression_to_dl_ir(program.args[2]))
+    elseif program.head == :test
+        kyx_program = DlTest(formula_to_dl_ir(program.args[1]))
     end
     return kyx_program
 end

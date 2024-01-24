@@ -1,23 +1,15 @@
-include("macro.jl")
 using MacroTools
 import Test
 
-mutable struct Assertion
-    line_number::LineNumberNode
-    assertion::Set{Formula}
-end
-
 mutable struct ProofGoal
-    program::Vector{Program}
-    assertion::Assertion
+    program::Vector{Expr}
+    assertion_line::Union{LineNumberNode,Nothing}
     children::Vector{ProofGoal}
 end
-
-Base.copy(proof_goal::ProofGoal) = ProofGoal(deepcopy(proof_goal.program), deepcopy(proof_goal.assertion), proof_goal.children)
-function ProofGoal(assertion)
-
-    return ProofGoal(Vector{Program}(), assertion, Vector{ProofGoal}())
-end
+Base.show(io::IO, proof_goal::ProofGoal) = print(io, "ProofGoal(", proof_goal.program, ", ", proof_goal.children, ")")
+ProofGoal(line_number::LineNumberNode) = ProofGoal(Expr[], line_number, ProofGoal[])
+ProofGoal() = ProofGoal(Expr[], nothing, ProofGoal[])
+Base.copy(proof_goal::ProofGoal) = ProofGoal(deepcopy(proof_goal.program), deepcopy(proof_goal.assertion_line), proof_goal.children)
 
 @enum ProgramEnum ASSIGNMENT ASSERT CONDITIONAL LINENUMBER
 function match_expr(ex)
@@ -40,7 +32,7 @@ function extract(instruction)
         @assert isa(symbol, Symbol)
         term = instruction.args[2]
         if !isa(term, Expr) && !isa(term, Symbol)
-            term = Float64(term)
+            return symbol, Float64(term)
         end
         return symbol, term
     elseif match_expr(instruction) == ASSERT
@@ -65,120 +57,136 @@ function split_top(program)
     return program.args[1], program.args[2], Expr(:block, program.args[3:end]...)
 end
 
-function precondition(program::Expr, postcondition::ProofGoal)
+function split_bottom(ex::Expr)
+    @assert length(ex.args) >= 2 "The program must contain a line number and an instruction!"
+    return ex.args[end-1], ex.args[end], Expr(:block, ex.args[1:end-2]...)
+end
+
+function get_variables(ex::Expr)
+    variables = Set{Symbol}()
+    queue = Vector{Union{Symbol,Expr,Number}}([ex])
+    while !isempty(queue)
+        x = pop!(queue)
+        if isa(x, Expr)
+            push!(queue, x.args...)
+        elseif isa(x, Symbol) && !(x in [:+, :-, :*, :/, :^, :<, :>, :<=, :>=, :(==), :!=, :&&, :||, :!])
+            push!(variables, x)
+        end
+    end
+    return variables
+end
+function get_assertions(dict, program::Expr)
     if isempty(program.args)
-        return [postcondition]
+        return [], []
+    end
+    line_number, instruction, rest = split_bottom(program)
+    if match_expr(instruction) == ASSIGNMENT
+        assertions, modified = get_assertions(dict, rest)
+        symbol, _ = extract(instruction)
+        return assertions, vcat(modified, [symbol])
+    elseif match_expr(instruction) == ASSERT
+        assertions, modified = get_assertions(dict, rest)
+        formula = extract(instruction)
+        new_assertion = [formula]
+        for assertion in Iterators.flatten(assertions)
+            current_modified = get_variables(assertion)
+            if isempty(intersect(current_modified, modified))
+                push!(new_assertion, assertion)
+            end
+        end
+        dict[line_number] = new_assertion
+        return [new_assertion], []
+    elseif match_expr(instruction) == CONDITIONAL
+        formula, true_branch, false_branch = extract(instruction)
+        true_branch = Expr(:block, rest.args..., true_branch.args...)
+        false_branch = Expr(:block, rest.args..., false_branch.args...)
+        true_assertions, true_modified = get_assertions(dict, true_branch)
+        false_assertions, false_modified = get_assertions(dict, false_branch)
+
+        modified = vcat(true_modified, false_modified)
+        filtered_true_assertions = [filter(x -> !(get_variables(x) ⊆ modified), true_assertion) for true_assertion in true_assertions]
+        filtered_false_assertions = [filter(x -> !(get_variables(x) ⊆ modified), false_assertion) for false_assertion in false_assertions]
+        assertions = vcat(filtered_true_assertions, filtered_false_assertions)
+        return assertions, modified
+    end
+    error("Unsupported instruction!")
+end
+
+function get_assertions(program::Expr)
+    dict = Dict()
+    get_assertions(dict, program)
+    for (key, value) in dict
+        dict[key] = unique(value)
+    end
+    return dict
+end
+
+function Base.iterate(pg::ProofGoal)
+    return (pg, nothing), nothing
+end
+
+function Base.iterate(pg::ProofGoal, state_queue)
+    if state_queue === nothing
+        queue = Vector{Tuple{ProofGoal, Union{ProofGoal, Nothing}}}()
+        push!(queue, (pg, nothing))
+        visited = Set()
+        push!(visited, pg)
+        return (pg, nothing), (nothing, queue, visited)
+    else
+        state, queue, visited = state_queue
+        while !isempty(queue)
+            current_pg, parent = popfirst!(queue)
+            children = current_pg.children
+            for child in children
+                if !(child in visited)
+                    push!(visited, child)
+                    push!(queue, (child, current_pg))
+                end
+            end
+            return (current_pg, parent), (state, queue, visited)
+        end
+        return nothing
+    end
+end
+
+Base.IteratorSize(::Type{ProofGoal}) = Base.SizeUnknown()
+
+function build_graph(node::ProofGoal, program::Expr)
+    if isempty(program.args)
+        return [node]
     end
     line_number, instruction, rest = split_top(program)
-    open = precondition(rest, postcondition)
+    open = build_graph(node, rest)
     if match_expr(instruction) == ASSIGNMENT
         for goal in open
-            assignment = program_to_dl_ir(instruction)
-            pushfirst!(goal.program, assignment)
+            pushfirst!(goal.program, instruction)
         end
         return open
     elseif match_expr(instruction) == ASSERT
-        formula = extract(instruction)
-        assertion = Assertion(line_number, Set([formula_to_dl_ir(formula)]))
-        proof_goal = ProofGoal(assertion)
+        proof_goal = ProofGoal(line_number)
         for goal in open
             push!(proof_goal.children, goal)
         end
         return [proof_goal]
     elseif match_expr(instruction) == CONDITIONAL
         formula, true_branch, false_branch = extract(instruction)
-        formula = formula_to_dl_ir(formula)
         new_open = []
         for goal in open
             # At this point I should do a shallow copy?
-            true_open = precondition(true_branch, copy(goal))
-            false_open = precondition(false_branch, copy(goal))
+            true_open = build_graph(copy(goal), true_branch)
+            false_open = build_graph(copy(goal), false_branch)
             for true_goal in true_open
-                pushfirst!(true_goal.program, DlTest(formula))
+                pushfirst!(true_goal.program, Expr(:test, formula))
             end
             for false_goal in false_open
-                pushfirst!(false_goal.program, DlTest(Not(formula)))
+                pushfirst!(false_goal.program, Expr(:test, :(!$formula)))
             end
             new_open = vcat(true_open, false_open, new_open)
         end
         return new_open
     end
+    error("Unsupported instruction!")
 end
-
-function build_goal_graph(program::Expr)
-    return precondition(program, ProofGoal(Assertion(LineNumberNode(1), Set([BoolTrue()]))))
+function build_graph(program::Expr)
+    return build_graph(ProofGoal(), program)
 end
-
-function split_bottom(ex::Expr)
-    @assert length(ex.args) >= 2 "The program must contain a line number and an instruction!"
-    return ex.args[end-1], ex.args[end], Expr(:block, ex.args[1:end-2]...)
-end
-
-function propagate_assertions(ex::Expr)
-    collected_assertions = Dict()
-    function propagate_assertions(ex::Expr, modified_variables)
-        if isempty(ex.args)
-            return [], []
-        end
-        line_number, instruction, rest = split_bottom(ex)
-        modified_variables, assertions = propagate_assertions(rest, modified_variables)
-        if match_expr(instruction) == ASSIGNMENT
-            symbol, _ = extract(instruction)
-            push!(modified_variables, symbol)
-            return modified_variables, assertions
-        elseif match_expr(instruction) == ASSERT
-            current_assertion = Assertion(line_number, Set([formula_to_dl_ir(extract(instruction))]))
-            for assertion in assertions
-                for formula in assertion.assertion
-                    if modified_variables ∩ get_variables(formula) == []
-                        push!(current_assertion.assertion, formula)
-                    end
-                end
-            end
-            collected_assertions[line_number] = current_assertion
-            return [], [current_assertion]
-        elseif match_expr(instruction) == CONDITIONAL
-            formula, true_branch, false_branch = extract(instruction)
-            # This is inefficient, could be improved by some explicit checking
-            prepend!(true_branch.args, rest.args)
-            prepend!(false_branch.args, rest.args)
-            formula = formula_to_dl_ir(formula)
-            true_modified_variables, true_assertion = propagate_assertions(true_branch, modified_variables)
-            false_modified_variables, false_assertion = propagate_assertions(false_branch, modified_variables)
-            modified_variables = true_modified_variables ∪ false_modified_variables
-            # TODO: Make this less ugly
-            formulas = [assertion.assertion for assertion in [true_assertion..., false_assertion...]]
-            formulas = reduce((x, y) -> intersect(x, y), formulas)
-            assertions = [Assertion(line_number, formulas)]
-            return modified_variables, assertions
-        end
-    end
-    modified_variables, assertions = propagate_assertions(ex, [])
-    return collected_assertions
-end
-
-function replace_assertions(graph, assertions)
-    for child in graph.children
-        replace_assertions(child, assertions)
-    end
-    for assertion in values(assertions)
-        if assertion.line_number == graph.assertion.line_number
-            graph.assertion = deepcopy(assertion)
-        end
-    end
-end
-
-# TODO: Merge assertions if the program inbetween is emtpy
-
-
-# - Clean up current branch
-# - Make commits
-# - delete unused code
-# - Implement test cases
-# - Implement goal printing
-# - Integrate new graph generation into macro call
-# - Implement the code that starts the KeYmaera X process
-# - Implement the code that sends the proof goal to KeYmaera X
-# - Implement the code that receives the proof result from KeYmaera X
-# - Implement symbolic execution with proper error handling
-# - Add for and while loops
