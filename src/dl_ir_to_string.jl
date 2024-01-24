@@ -5,12 +5,12 @@ function expression_to_string(expression::Expression)
         PLUS => "+",
         MINUS => "-",
         MULT => "*",
-        Elenchos.DIV => "/"
+        DIV => "/"
     )
     if expression.symbol == SYMBOL
         #TODO: Handle the edge cases, e.g., x_1, x_2, etc.
         return snake_case_to_camel_case("$(expression.left)")
-    elseif expression.symbol == Elenchos.REAL
+    elseif expression.symbol == REAL
         return "$(expression.left)"
     elseif expression.symbol == MINUS
         if isnothing(expression.right)
@@ -18,7 +18,7 @@ function expression_to_string(expression::Expression)
         else
             return "$(expression_to_string(expression.left)) " * symbol_to_string[expression.symbol] * " $(expression_to_string(expression.right))"
         end
-    elseif expression.symbol in [PLUS, MULT, Elenchos.DIV]
+    elseif expression.symbol in [PLUS, MULT, DIV]
         return "$(expression_to_string(expression.left)) " * symbol_to_string[expression.symbol] * " $(expression_to_string(expression.right))"
     end
 end
@@ -28,7 +28,7 @@ function formula_to_string(formula::Formula)
     symbol_to_string = Dict(
         less_or_equal => "<=",
         greater_or_equal => ">=",
-        Elenchos.less => "<",
+        less => "<",
         greater => ">",
         equal => "=",
         not_equal => "!=",
@@ -38,7 +38,7 @@ function formula_to_string(formula::Formula)
         bool_true => "true",
         bool_false => "false"
     )
-    if formula.symbol in [less_or_equal, greater_or_equal, Elenchos.less, greater, equal, not_equal]
+    if formula.symbol in [less_or_equal, greater_or_equal, less, greater, equal, not_equal]
         return "$(expression_to_string(formula.first_expressions)) " * symbol_to_string[formula.symbol] * " $(expression_to_string(formula.second_expressions))"
     elseif formula.symbol in [and, or]
         return "$(formula_to_string(formula.first_subformula)) " * symbol_to_string[formula.symbol] * " $(formula_to_string(formula.second_subformula))"
