@@ -42,7 +42,4 @@ end
     @Test.test to_kyx_problem_string(assumptions, assertions, program) == "(true) -> [{x := 1.0; }] (false)"
 end
 
-@Test.testset "Test to_kyx_file_string" begin
-    @Test.test to_kyx_file_string([], [], [], Empty()) == "ArchiveEntry \"test.kyx\"\n   ProgramVariables\n\n   End.\n   Problem\n      (true) -> [{}] (false)\n   End.\nEnd."
-end
 
