@@ -3,25 +3,30 @@ import Test
 
 mutable struct ProofGoal
     program::Vector{Expr}
-    assertion_line::Union{LineNumberNode,Nothing}
+    assertions::Vector{Expr}
+    propagated_assertions::Vector{Expr}
     children::Vector{ProofGoal}
 end
-Base.show(io::IO, proof_goal::ProofGoal) = print(io, "ProofGoal(", proof_goal.program, ", ", proof_goal.children, ")")
-ProofGoal(line_number::LineNumberNode) = ProofGoal(Expr[], line_number, ProofGoal[])
-ProofGoal() = ProofGoal(Expr[], nothing, ProofGoal[])
-Base.copy(proof_goal::ProofGoal) = ProofGoal(deepcopy(proof_goal.program), deepcopy(proof_goal.assertion_line), proof_goal.children)
+# Base.show(io::IO, proof_goal::ProofGoal) = print(io, "ProofGoal(", proof_goal.program, ", ", proof_goal.children, ")")
+ProofGoal(assertions::Vector{Expr}) = ProofGoal(Expr[], assertions, [], ProofGoal[])
+ProofGoal() = ProofGoal(Expr[], [], [], ProofGoal[])
+Base.copy(proof_goal::ProofGoal) = ProofGoal(deepcopy(proof_goal.program), deepcopy(proof_goal.assertion_line), deepcopy(proof_goal.propagated_assertions), proof_goal.children)
 
-@enum ProgramEnum ASSIGNMENT ASSERT CONDITIONAL LINENUMBER WHILE
+@enum ProgramEnum ASSIGNMENT ASSERT CONDITIONAL LINENUMBER WHILE INVARIANT UNDEFINED
 function match_expr(ex)
     if isa(ex, Expr)
         if ex.head == :(=)
             return ASSIGNMENT
         elseif ex.head == :macrocall && ex.args[1] == Symbol("@assert")
             return ASSERT
+        elseif ex.head == :macrocall && ex.args[1] == Symbol("@invariant")
+            return INVARIANT
         elseif ex.head == :if
             return CONDITIONAL
         elseif ex.head == :while
             return WHILE
+        else 
+            return UNDEFINED
         end
     end
     return LINENUMBER
@@ -37,7 +42,7 @@ function extract(instruction)
             return symbol, Float64(term)
         end
         return symbol, term
-    elseif match_expr(instruction) == ASSERT
+    elseif match_expr(instruction) == ASSERT || match_expr(instruction) == INVARIANT
         formula = instruction.args[3]
         return formula
     elseif match_expr(instruction) == CONDITIONAL
@@ -174,11 +179,35 @@ function build_graph(node::ProofGoal, program::Expr)
         end
         return open
     elseif match_expr(instruction) == ASSERT
-        proof_goal = ProofGoal(line_number)
+        formula = extract(instruction)
+        proof_goal = ProofGoal([formula])
         for goal in open
             push!(proof_goal.children, goal)
         end
         return [proof_goal]
+    elseif match_expr(instruction) == INVARIANT
+        # TODO: Allow multiple invariants in a row
+        if isempty(rest.args)
+            error("Invariant must be followed by a block!")
+        elseif match_expr(rest.args[2]) != WHILE
+            error("Invariant must be followed by a while loop!")
+        end
+        formula, loop_body = extract(rest.args[2])
+        invariant = extract(instruction)
+        postcondition = ProofGoal([invariant])
+        for goal in open
+            pushfirst!(goal.program, Expr(:test, :(!$formula)))
+            push!(postcondition.children, goal)
+        end
+
+        # Ignore asserts inside the loop body
+        append!(postcondition.program, [Expr(:test, formula), Expr(:block, loop_body.args[1:end-1]...)])
+        
+        precondition = ProofGoal([invariant])
+        # push!(precondition.program, Expr(:test, formula))
+        push!(precondition.children, postcondition)
+        
+        return [precondition]
     elseif match_expr(instruction) == CONDITIONAL
         formula, true_branch, false_branch = extract(instruction)
         new_open = []
@@ -203,9 +232,38 @@ function build_graph(node::ProofGoal, program::Expr)
             pushfirst!(goal.program, complete)
         end
         return open
+    elseif match_expr(instruction) == UNDEFINED
+        error("Expressions of type '$(instruction.head)' are not supported!")
     end
-    error("Unsupported instruction!")
 end
 function build_graph(program::Expr)
     return build_graph(ProofGoal(), program)
 end
+
+# function modified_variables(body::Expr)
+#     queue = [body]
+#     variables = Set{Tuple{Symbol,Symbol}}()
+#     while !isempty(queue)
+#         x = pop!(queue)
+#         #TODO: Check whether you need type inference
+#         if @capture(x, y_ = e_)
+#             push!(variables, (y, :Real))
+#         elseif isa(x, Expr)
+#             push!(queue, filter(z -> isa(z, Expr), x.args)...)
+#         end
+#     end
+#     return variables
+# end
+
+# function propagate_assertions!(pg::ProofGoal)
+#     for (child, parent) in pg
+#         # if parent === nothing
+#         #     continue
+#         # end
+#         # for assertion in parent.assertions
+#         #     push!(child.assertions, assertion)
+#         # end
+
+#         if get_variables
+#     end
+# end
