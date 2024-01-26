@@ -1,6 +1,7 @@
 export @elenchos
 
 using MacroTools
+using HTTP
 
 
 function parse_function(ex)
@@ -47,6 +48,21 @@ end
 
 include("to_kyx_string.jl")
 include("proof_goal.jl")
+
+function parse_response(response)
+    if isnothing(response)
+        return nothing
+    end
+    body = String(response.body)
+    if contains(body, "PROVED")
+        return true
+    elseif contains(body, "UNFINISHED")
+        return false
+    else
+        return nothing
+    end
+end
+
 macro elenchos(function_definition)
     variables, graphs, assertions = parse_function(function_definition)
     provables = []
@@ -56,10 +72,39 @@ macro elenchos(function_definition)
                 program = program_to_dl_ir(Expr(:block, goal.program...))
                 assumptions_ir = map(x -> formula_to_dl_ir(x), assertions[parent.assertion_line])
                 assertions_ir = map(x -> formula_to_dl_ir(x), assertions[goal.assertion_line])
-                push!(provables, to_kyx_file_string(variables, assumptions_ir, assertions_ir, program))
+                push!(provables, (variables, assumptions_ir, assertions_ir, program))
+
             end
         end
     end
-    return provables
+    is_success = true
+    for provable in provables
+        name = hash(provable)
+        variables, assumptions_ir, assertions_ir, program = provable
+        kyx_string = to_kyx_file_string(variables, assumptions_ir, assertions_ir, program, name)
+        response = nothing
+        try
+            response = HTTP.post("http://localhost:8070/check", Dict("Content-Type" => "text/plain"), kyx_string)
+        catch 
+            println("Failed to send proof request")
+            is_success = false
+            break
+        end
+        is_success = parse_response(response)
+        if isnothing(is_success)
+            println("Unexpected error")
+            break
+        end
+        if is_success
+            println("Proved ", to_kyx_problem_string(assumptions_ir, assertions_ir, program))
+        else
+            println("Failed to prove ", to_kyx_problem_string(assumptions_ir, assertions_ir, program))
+            break
+        end
+    end
+    if is_success
+        println("Proved all provables")
+    else
+        println("Failed to prove all provables")
+    end
 end
-

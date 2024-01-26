@@ -473,21 +473,22 @@ Only support assertion in loop body if there is a loop invariant?
 
 """
 
-"""@invariant x > 0 for _ in 1:10
-    x = x + 1
-end
+# """
+# @invariant x > 0 for _ in 1:10
+#     x = x + 1
+# end
 
-@invariant x > 0
+# @invariant x > 0
 
-@invariant x > 0 x = sum(x, y)
+# @invariant x > 0 x = sum(x, y)
 
-@invariant x > 0 begin
-    x = x + 1
-    x = x * x
-end
-"""
+# @invariant x > 0 begin
+#     x = x + 1
+#     x = x * x
+# end
+# """
 using Elenchos
-provables = @elenchos function max(x::Real, y::Real)
+@elenchos function max(x::Real, y::Real)
     @assert x > 0
     if x > y
         max_value = x
@@ -495,7 +496,6 @@ provables = @elenchos function max(x::Real, y::Real)
         max_value = y
     end
     @assert max_value >= x
+    x = x + 1
+    @assert x > 0
 end
-
-print(provables[1])
-print(provables[2])

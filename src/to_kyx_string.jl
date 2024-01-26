@@ -27,18 +27,21 @@ function to_kyx_problem_string(assumptions, assertions, program)
     return "(" * assumptions_string * ")" * " -> [{"* program_to_string(program) *"}] " * "(" * assertions_string * ")"
 end
 
-function to_kyx_file_string(variables, assumptions, assertions, program)
+function to_kyx_file_string(variables, assumptions, assertions, program, name)
     variables_strings = to_kyx_variable_string(variables)
     variables_strings = map(x -> "      "*x, variables_strings)
     variables_string = join(variables_strings, "\n")
     problem_string = to_kyx_problem_string(assumptions, assertions, program)
 
-    kyx_string = "ArchiveEntry \"test.kyx\"\n" *
+    kyx_string = "Theorem \"$name.kyx\"\n" *
                     "   ProgramVariables\n" *
                         variables_string * "\n" *
                     "   End.\n" *
                     "   Problem\n" *
                     "      " * problem_string * "\n" *
+                    "   End.\n" *
+                    "   Tactic\n" *
+                    "      auto\n" *
                     "   End.\n" *
                     "End."
     return kyx_string
