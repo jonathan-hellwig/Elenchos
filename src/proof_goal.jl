@@ -11,7 +11,7 @@ ProofGoal(line_number::LineNumberNode) = ProofGoal(Expr[], line_number, ProofGoa
 ProofGoal() = ProofGoal(Expr[], nothing, ProofGoal[])
 Base.copy(proof_goal::ProofGoal) = ProofGoal(deepcopy(proof_goal.program), deepcopy(proof_goal.assertion_line), proof_goal.children)
 
-@enum ProgramEnum ASSIGNMENT ASSERT CONDITIONAL LINENUMBER
+@enum ProgramEnum ASSIGNMENT ASSERT CONDITIONAL LINENUMBER WHILE
 function match_expr(ex)
     if isa(ex, Expr)
         if ex.head == :(=)
@@ -20,6 +20,8 @@ function match_expr(ex)
             return ASSERT
         elseif ex.head == :if
             return CONDITIONAL
+        elseif ex.head == :while
+            return WHILE
         end
     end
     return LINENUMBER
@@ -47,9 +49,12 @@ function extract(instruction)
         false_branch = instruction.args[3]
         @assert false_branch.head == :block
         return formula, true_branch, false_branch
-    else
-        error("Unsupported instruction!")
+    elseif match_expr(instruction) == WHILE
+        formula = instruction.args[1]
+        block = instruction.args[2]
+        return formula, block
     end
+    error("Unsupported instruction!")
 end
 
 function split_top(program)
@@ -107,6 +112,12 @@ function get_assertions(dict, program::Expr)
         filtered_true_assertions = [filter(x -> !(get_variables(x) ⊆ modified), true_assertion) for true_assertion in true_assertions]
         filtered_false_assertions = [filter(x -> !(get_variables(x) ⊆ modified), false_assertion) for false_assertion in false_assertions]
         assertions = vcat(filtered_true_assertions, filtered_false_assertions)
+        return assertions, modified
+    elseif match_expr(instruction) == WHILE
+        formula, block = extract(instruction)
+        # The body of the loop has a line number node at the end
+        block = Expr(:block, rest.args..., block.args[1:end-1]...)
+        assertions, modified = get_assertions(dict, block)
         return assertions, modified
     end
     error("Unsupported instruction!")
@@ -184,6 +195,14 @@ function build_graph(node::ProofGoal, program::Expr)
             new_open = vcat(true_open, false_open, new_open)
         end
         return new_open
+    elseif match_expr(instruction) == WHILE
+        formula, block = extract(instruction)
+        for goal in open
+            loop = Expr(:loop, Expr(:block, Expr(:test, formula), block.args...))
+            complete = Expr(:block, loop, Expr(:test, :(!$formula)))
+            pushfirst!(goal.program, complete)
+        end
+        return open
     end
     error("Unsupported instruction!")
 end

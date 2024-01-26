@@ -39,7 +39,7 @@ NotEqual(expression1::Expression, expression2::Expression) = Formula(not_equal, 
 BoolTrue() = Formula(bool_true, nothing, nothing, nothing, nothing)
 BoolFalse() = Formula(bool_false, nothing, nothing, nothing, nothing)
 
-@enum ProgramSymbol assign choice sequential dl_test empty
+@enum ProgramSymbol assign choice sequential dl_test empty loop
 
 """
     Program
@@ -60,6 +60,7 @@ Choice(first_program::Program, second_program::Program) = Program(choice, first_
 Sequential(first_program::Union{Program,Nothing}, second_program::Union{Program,Nothing}) = Program(sequential, first_program, second_program, nothing, nothing)
 Empty() = Program(empty, nothing, nothing, nothing, nothing)
 DlTest(formula::Formula) = Program(dl_test, nothing, nothing, formula, nothing)
+Loop(program::Program) = Program(loop, program, nothing, nothing, nothing)
 
 function expression_to_dl_ir(expression)
     if isa(expression, Real)
@@ -136,6 +137,8 @@ function program_to_dl_ir(program)
     if program.head == :block
         if length(program.args) == 0
             kyx_program = Empty()
+        elseif program.args[1] isa LineNumberNode
+            kyx_program = program_to_dl_ir(Expr(:block, program.args[2:end]...))
         else
             new_program = Expr(program.head, program.args[2:end]...)
             kyx_program = Sequential(program_to_dl_ir(program.args[1]), program_to_dl_ir(new_program))
@@ -159,6 +162,8 @@ function program_to_dl_ir(program)
         kyx_program = Assignment(expression_to_dl_ir(program.args[1]), expression_to_dl_ir(program.args[2]))
     elseif program.head == :test
         kyx_program = DlTest(formula_to_dl_ir(program.args[1]))
+    elseif program.head == :loop
+        kyx_program = Loop(program_to_dl_ir(program.args[1]))
     end
     return kyx_program
 end

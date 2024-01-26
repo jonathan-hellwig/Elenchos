@@ -496,6 +496,11 @@ using Elenchos
         max_value = y
     end
     @assert max_value >= x
+using Elenchos
+@elenchos function simulate(x::Real)
+    @assert x > 0
+    while x < 10
     x = x + 1
+    end
     @assert x > 0
 end
