@@ -15,9 +15,14 @@ function parse_function(ex)
     variables = union(argument_variables, body_variables)
 
     graphs = build_graph(body)
-    assertions = get_assertions(body)
+    for graph in graphs
+        propagate_modified(graph)
+    end
+    for graph in graphs
+        propagate_assertions(graph)
+    end
 
-    return variables, graphs, assertions
+    return variables, graphs
 end
 
 function collect_unique_variables(body::Expr)
@@ -64,23 +69,17 @@ function parse_response(response)
 end
 
 macro elenchos(function_definition)
-    variables, graphs, assertions = parse_function(function_definition)
-    provables = []
-    for graph in graphs
-        for (goal, parent) in graph
-            if !isnothing(parent) && !isnothing(goal.assertion_line) && !isempty(goal.program)
-                program = program_to_dl_ir(Expr(:block, goal.program...))
-                assumptions_ir = map(x -> formula_to_dl_ir(x), assertions[parent.assertion_line])
-                assertions_ir = map(x -> formula_to_dl_ir(x), assertions[goal.assertion_line])
-                push!(provables, (variables, assumptions_ir, assertions_ir, program))
+    variables, graphs = parse_function(function_definition)
+    provables = Iterators.flatmap(x -> proof_obligations(x), graphs)
 
-            end
-        end
-    end
     is_success = true
     for provable in provables
         name = hash(provable)
-        variables, assumptions_ir, assertions_ir, program = provable
+        assumptions, assertions, program = provable
+        assumptions_ir = map(x -> formula_to_dl_ir(x), collect(assumptions))
+        assertions_ir = map(x -> formula_to_dl_ir(x), collect(assertions))
+        program = program_to_dl_ir(program)
+
         kyx_string = to_kyx_file_string(variables, assumptions_ir, assertions_ir, program, name)
         response = nothing
         try

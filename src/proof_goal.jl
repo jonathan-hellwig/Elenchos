@@ -1,16 +1,23 @@
 using MacroTools
 import Test
-
-mutable struct ProofGoal
-    program::Vector{Expr}
-    assertions::Vector{Expr}
-    propagated_assertions::Vector{Expr}
+abstract type ProofGoal end
+mutable struct Assertion <: ProofGoal
+    formula::Expr
+    propagated::Set{Expr}
+    block_propagation::Bool
+    modified_variables::Set{Symbol}
     children::Vector{ProofGoal}
 end
-# Base.show(io::IO, proof_goal::ProofGoal) = print(io, "ProofGoal(", proof_goal.program, ", ", proof_goal.children, ")")
-ProofGoal(assertions::Vector{Expr}) = ProofGoal(Expr[], assertions, [], ProofGoal[])
-ProofGoal() = ProofGoal(Expr[], [], [], ProofGoal[])
-Base.copy(proof_goal::ProofGoal) = ProofGoal(deepcopy(proof_goal.program), deepcopy(proof_goal.assertion_line), deepcopy(proof_goal.propagated_assertions), proof_goal.children)
+Assertion(formula::Expr) = Assertion(formula, Set{Expr}(), false, Set{Symbol}(), ProofGoal[])
+
+mutable struct PGProgram <: ProofGoal
+    instructions::Vector{Expr}
+    propagated::Set{Expr}
+    children::Vector{ProofGoal}
+end
+PGProgram() = PGProgram(Expr[], Set{Expr}(), ProofGoal[])
+PGProgram(child::ProofGoal) = PGProgram(Expr[], Set{Expr}(), [child])
+Base.copy(pg::PGProgram) = PGProgram(copy(pg.instructions), copy(pg.propagated), pg.children)
 
 @enum ProgramEnum ASSIGNMENT ASSERT CONDITIONAL LINENUMBER WHILE INVARIANT UNDEFINED
 function match_expr(ex)
@@ -85,106 +92,27 @@ function get_variables(ex::Expr)
     end
     return variables
 end
-function get_assertions(dict, program::Expr)
-    if isempty(program.args)
-        return [], []
-    end
-    line_number, instruction, rest = split_bottom(program)
-    if match_expr(instruction) == ASSIGNMENT
-        assertions, modified = get_assertions(dict, rest)
-        symbol, _ = extract(instruction)
-        return assertions, vcat(modified, [symbol])
-    elseif match_expr(instruction) == ASSERT
-        assertions, modified = get_assertions(dict, rest)
-        formula = extract(instruction)
-        new_assertion = [formula]
-        for assertion in Iterators.flatten(assertions)
-            current_modified = get_variables(assertion)
-            if isempty(intersect(current_modified, modified))
-                push!(new_assertion, assertion)
-            end
-        end
-        dict[line_number] = new_assertion
-        return [new_assertion], []
-    elseif match_expr(instruction) == CONDITIONAL
-        formula, true_branch, false_branch = extract(instruction)
-        true_branch = Expr(:block, rest.args..., true_branch.args...)
-        false_branch = Expr(:block, rest.args..., false_branch.args...)
-        true_assertions, true_modified = get_assertions(dict, true_branch)
-        false_assertions, false_modified = get_assertions(dict, false_branch)
-
-        modified = vcat(true_modified, false_modified)
-        filtered_true_assertions = [filter(x -> !(get_variables(x) ⊆ modified), true_assertion) for true_assertion in true_assertions]
-        filtered_false_assertions = [filter(x -> !(get_variables(x) ⊆ modified), false_assertion) for false_assertion in false_assertions]
-        assertions = vcat(filtered_true_assertions, filtered_false_assertions)
-        return assertions, modified
-    elseif match_expr(instruction) == WHILE
-        formula, block = extract(instruction)
-        # The body of the loop has a line number node at the end
-        block = Expr(:block, rest.args..., block.args[1:end-1]...)
-        assertions, modified = get_assertions(dict, block)
-        return assertions, modified
-    end
-    error("Unsupported instruction!")
-end
-
-function get_assertions(program::Expr)
-    dict = Dict()
-    get_assertions(dict, program)
-    for (key, value) in dict
-        dict[key] = unique(value)
-    end
-    return dict
-end
-
-function Base.iterate(pg::ProofGoal)
-    return (pg, nothing), nothing
-end
-
-function Base.iterate(pg::ProofGoal, state_queue)
-    if state_queue === nothing
-        queue = Vector{Tuple{ProofGoal, Union{ProofGoal, Nothing}}}()
-        push!(queue, (pg, nothing))
-        visited = Set()
-        push!(visited, pg)
-        return (pg, nothing), (nothing, queue, visited)
-    else
-        state, queue, visited = state_queue
-        while !isempty(queue)
-            current_pg, parent = popfirst!(queue)
-            children = current_pg.children
-            for child in children
-                if !(child in visited)
-                    push!(visited, child)
-                    push!(queue, (child, current_pg))
-                end
-            end
-            return (current_pg, parent), (state, queue, visited)
-        end
-        return nothing
-    end
-end
-
-Base.IteratorSize(::Type{ProofGoal}) = Base.SizeUnknown()
-
 function build_graph(node::ProofGoal, program::Expr)
     if isempty(program.args)
         return [node]
     end
     line_number, instruction, rest = split_top(program)
-    open = build_graph(node, rest)
     if match_expr(instruction) == ASSIGNMENT
+        open = build_graph(node, rest)
         for goal in open
-            pushfirst!(goal.program, instruction)
+            @assert isa(goal, PGProgram)
+            pushfirst!(goal.instructions, instruction)
         end
         return open
     elseif match_expr(instruction) == ASSERT
+        open = build_graph(node, rest)
         formula = extract(instruction)
-        proof_goal = ProofGoal([formula])
+        assertion = Assertion(formula)
         for goal in open
-            push!(proof_goal.children, goal)
+            push!(assertion.children, goal)
         end
-        return [proof_goal]
+        program = PGProgram(assertion)
+        return [program]
     elseif match_expr(instruction) == INVARIANT
         # TODO: Allow multiple invariants in a row
         if isempty(rest.args)
@@ -192,23 +120,28 @@ function build_graph(node::ProofGoal, program::Expr)
         elseif match_expr(rest.args[2]) != WHILE
             error("Invariant must be followed by a while loop!")
         end
+        open = build_graph(node, Expr(:block, rest.args[3:end]...))
+
         formula, loop_body = extract(rest.args[2])
         invariant = extract(instruction)
-        postcondition = ProofGoal([invariant])
+        postcondition = Assertion(invariant)
+        postcondition.block_propagation = true
         for goal in open
-            pushfirst!(goal.program, Expr(:test, :(!$formula)))
+            pushfirst!(goal.instructions, Expr(:test, :(!$formula)))
             push!(postcondition.children, goal)
         end
-
+        loop_program = PGProgram(postcondition)
         # Ignore asserts inside the loop body
-        append!(postcondition.program, [Expr(:test, formula), Expr(:block, loop_body.args[1:end-1]...)])
+        append!(loop_program.instructions, [Expr(:test, formula), Expr(:block, loop_body.args[1:end-1]...)])
         
-        precondition = ProofGoal([invariant])
+        precondition = Assertion(invariant)
+        precondition.block_propagation = true
         # push!(precondition.program, Expr(:test, formula))
-        push!(precondition.children, postcondition)
+        push!(precondition.children, loop_program)
         
-        return [precondition]
+        return [PGProgram(precondition)]
     elseif match_expr(instruction) == CONDITIONAL
+        open = build_graph(node, rest)
         formula, true_branch, false_branch = extract(instruction)
         new_open = []
         for goal in open
@@ -216,20 +149,21 @@ function build_graph(node::ProofGoal, program::Expr)
             true_open = build_graph(copy(goal), true_branch)
             false_open = build_graph(copy(goal), false_branch)
             for true_goal in true_open
-                pushfirst!(true_goal.program, Expr(:test, formula))
+                pushfirst!(true_goal.instructions, Expr(:test, formula))
             end
             for false_goal in false_open
-                pushfirst!(false_goal.program, Expr(:test, :(!$formula)))
+                pushfirst!(false_goal.instructions, Expr(:test, :(!$formula)))
             end
             new_open = vcat(true_open, false_open, new_open)
         end
         return new_open
     elseif match_expr(instruction) == WHILE
+        open = build_graph(node, rest)
         formula, block = extract(instruction)
         for goal in open
             loop = Expr(:loop, Expr(:block, Expr(:test, formula), block.args...))
             complete = Expr(:block, loop, Expr(:test, :(!$formula)))
-            pushfirst!(goal.program, complete)
+            pushfirst!(goal.instructions, complete)
         end
         return open
     elseif match_expr(instruction) == UNDEFINED
@@ -237,33 +171,92 @@ function build_graph(node::ProofGoal, program::Expr)
     end
 end
 function build_graph(program::Expr)
-    return build_graph(ProofGoal(), program)
+    return build_graph(PGProgram(), program)
 end
 
-# function modified_variables(body::Expr)
-#     queue = [body]
-#     variables = Set{Tuple{Symbol,Symbol}}()
-#     while !isempty(queue)
-#         x = pop!(queue)
-#         #TODO: Check whether you need type inference
-#         if @capture(x, y_ = e_)
-#             push!(variables, (y, :Real))
-#         elseif isa(x, Expr)
-#             push!(queue, filter(z -> isa(z, Expr), x.args)...)
-#         end
-#     end
-#     return variables
-# end
+function modified_variables(body::Expr)
+    queue = [body]
+    variables = Set{Symbol}()
+    while !isempty(queue)
+        x = pop!(queue)
+        #TODO: Check whether you need type inference
+        if @capture(x, y_ = e_)
+            push!(variables, y)
+        elseif isa(x, Expr)
+            push!(queue, filter(z -> isa(z, Expr), x.args)...)
+        end
+    end
+    return variables
+end
 
-# function propagate_assertions!(pg::ProofGoal)
-#     for (child, parent) in pg
-#         # if parent === nothing
-#         #     continue
-#         # end
-#         # for assertion in parent.assertions
-#         #     push!(child.assertions, assertion)
-#         # end
+function propagate_modified(pg::ProofGoal)
+    if isa(pg, Assertion)
+        for child in pg.children
+            propagate_modified(child)
+        end
+        return
+    elseif isa(pg, PGProgram)
+        modified = modified_variables(Expr(:block, pg.instructions...))
+        for child in pg.children
+            child.modified_variables = modified ∪ child.modified_variables
+            propagate_modified(child)
+        end
+        return
+    end
+end
 
-#         if get_variables
-#     end
-# end
+function propagate_assertions(pg::ProofGoal)
+    if isa(pg, Assertion)
+        for child in pg.children
+            @assert isa(child, PGProgram)
+            child.propagated = child.propagated ∪ pg.propagated 
+            if !pg.block_propagation
+                child.propagated = child.propagated ∪ Set([pg.formula])
+            end
+            propagate_assertions(child)
+        end
+    elseif isa(pg, PGProgram)
+        for child in pg.children
+            @assert isa(child, Assertion)
+            for formula in pg.propagated
+                if isempty(get_variables(formula) ∩ child.modified_variables) 
+                    push!(child.propagated, formula)
+                end
+            end
+            propagate_assertions(child)
+        end
+    end
+end
+
+
+function proof_obligations(pg::ProofGoal, obligations)
+    # println(pg.children)
+    if isa(pg, PGProgram)
+        for child in pg.children
+            @assert isa(child, Assertion)
+            proof_obligations(child, obligations)
+        end
+    elseif isa(pg, Assertion)
+        for program in pg.children
+            @assert isa(program, PGProgram)
+            for assertion in program.children
+                if !isempty(program.instructions)
+                    # println("LOWEST LEVEL")
+                    @assert isa(assertion, Assertion)
+                    assumptions = Set([pg.formula]) ∪ pg.propagated
+                    program = Expr(:block, program.instructions...)
+                    assertions = Set([assertion.formula]) ∪ assertion.propagated
+                    push!(obligations, (assumptions, assertions, program))
+                    # println(obligations)
+                end
+                proof_obligations(assertion, obligations)
+            end
+        end
+    end
+end
+
+function proof_obligations(graph)
+    obligations = []
+    proof_obligations(graph, obligations)
+    return obligations
+end
