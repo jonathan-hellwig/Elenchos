@@ -164,6 +164,8 @@ function program_to_dl_ir(program)
         kyx_program = DlTest(formula_to_dl_ir(program.args[1]))
     elseif program.head == :loop
         kyx_program = Loop(program_to_dl_ir(program.args[1]))
+    else
+        error("Unsupported program!")
     end
     return kyx_program
 end

@@ -4,11 +4,12 @@ abstract type ProofGoal end
 mutable struct Assertion <: ProofGoal
     formula::Expr
     propagated::Set{Expr}
+    line_number::LineNumberNode
     block_propagation::Bool
     modified_variables::Set{Symbol}
     children::Vector{ProofGoal}
 end
-Assertion(formula::Expr) = Assertion(formula, Set{Expr}(), false, Set{Symbol}(), ProofGoal[])
+Assertion(formula::Expr, line_number::LineNumberNode) = Assertion(formula, Set{Expr}(), line_number, false, Set{Symbol}(), ProofGoal[])
 
 mutable struct PGProgram <: ProofGoal
     instructions::Vector{Expr}
@@ -107,7 +108,7 @@ function build_graph(node::ProofGoal, program::Expr)
     elseif match_expr(instruction) == ASSERT
         open = build_graph(node, rest)
         formula = extract(instruction)
-        assertion = Assertion(formula)
+        assertion = Assertion(formula, line_number)
         for goal in open
             push!(assertion.children, goal)
         end
@@ -124,7 +125,7 @@ function build_graph(node::ProofGoal, program::Expr)
 
         formula, loop_body = extract(rest.args[2])
         invariant = extract(instruction)
-        postcondition = Assertion(invariant)
+        postcondition = Assertion(invariant, line_number)
         postcondition.block_propagation = true
         for goal in open
             pushfirst!(goal.instructions, Expr(:test, :(!$formula)))
@@ -134,7 +135,7 @@ function build_graph(node::ProofGoal, program::Expr)
         # Ignore asserts inside the loop body
         append!(loop_program.instructions, [Expr(:test, formula), Expr(:block, loop_body.args[1:end-1]...)])
         
-        precondition = Assertion(invariant)
+        precondition = Assertion(invariant, line_number)
         precondition.block_propagation = true
         # push!(precondition.program, Expr(:test, formula))
         push!(precondition.children, loop_program)
@@ -246,7 +247,7 @@ function proof_obligations(pg::ProofGoal, obligations)
                     assumptions = Set([pg.formula]) ∪ pg.propagated
                     program = Expr(:block, program.instructions...)
                     assertions = Set([assertion.formula]) ∪ assertion.propagated
-                    push!(obligations, (assumptions, assertions, program))
+                    push!(obligations, (assumptions, assertions, program, assertion.line_number))
                     # println(obligations)
                 end
                 proof_obligations(assertion, obligations)

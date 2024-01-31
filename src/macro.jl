@@ -75,7 +75,7 @@ macro elenchos(function_definition)
     is_success = true
     for provable in provables
         name = hash(provable)
-        assumptions, assertions, program = provable
+        assumptions, assertions, program, line_number = provable
         assumptions_ir = map(x -> formula_to_dl_ir(x), collect(assumptions))
         assertions_ir = map(x -> formula_to_dl_ir(x), collect(assertions))
         program = program_to_dl_ir(program)
@@ -84,7 +84,8 @@ macro elenchos(function_definition)
         response = nothing
         try
             response = HTTP.post("http://localhost:8070/check", Dict("Content-Type" => "text/plain"), kyx_string)
-        catch 
+        catch
+            
             println("Failed to send proof request")
             is_success = false
             break
@@ -97,8 +98,9 @@ macro elenchos(function_definition)
         if is_success
             println("Proved ", to_kyx_problem_string(assumptions_ir, assertions_ir, program))
         else
-            println("Failed to prove ", to_kyx_problem_string(assumptions_ir, assertions_ir, program))
-            break
+            error_code = :(throw(AssertionError("Failed to prove" * $(to_kyx_problem_string(assumptions_ir, assertions_ir, program)))))
+            code = Expr(:block, [line_number, error_code]...)
+            eval(code)
         end
     end
     if is_success
