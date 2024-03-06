@@ -1,0 +1,32 @@
+﻿/* Exported from KeYmaera X v5.0.2 */
+
+Theorem "Thermostat"
+Definitions
+    Real a;
+    Real b;
+    Real vh;
+End.
+ProgramVariables
+    Real x;
+    Real u;
+    Real v;
+End.
+Problem
+  u = 0 & 19 <= x & x <= 21 & a = 0.3 & b = 0.9 & vh = 40 & v = vh-> [{{?x>=21;v:=0; ++ ?x<=19;v:=vh; ++ ?(19 < x & x < 21);};{{x'=-a * (x - u), u'=-b*(u-v) & x <= 19} ++
+  {{x'=-a * (x - u), u'=-b*(u-v) & (19 <= x & x <= 21)}} ++
+  {x'=-a * (x - u), u'=-b*(u-v) & x >= 21}}}*@invariant(x>=1/200*(u-20)^2+17 & u>=0 & (v = 0 | v = vh) & u <= 40)]x>=17
+End.
+
+Tactic "Thermostat: Proof"
+unfold;
+loop("x>=1/200*(u-20)^2+17&u>=0&(v=0|v=vh())&u<=40", 'R=="[{{?x>=21;v:=0;++?x<=19;v:=vh();++?19 < x&x < 21;}{{x'=-a()*(x-u),u'=-b()*(u-v)&x<=19}++{x'=-a()*(x-u),u'=-b()*(u-v)&19<=x&x<=21}++{x'=-a()*(x-u),u'=-b()*(u-v)&x>=21}}}*]x>=17"); <(
+  "Init":
+    auto,
+  "Post":
+    auto,
+  "Step":
+    auto
+)
+End.
+
+End.
