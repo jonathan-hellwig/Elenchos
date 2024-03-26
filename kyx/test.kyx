@@ -1,12 +1,24 @@
-﻿ArchiveEntry "sadffasdfwdfdfer"
+﻿ArchiveEntry "sadfsdffasdfwdfdfer"
 ProgramVariables
     Real x;
 End.
 Problem
   [x:=1;{x:=x+1;}*]x>=1
 End.
-
+/*
 Tactic "Proof"
 auto
+End.
+*/
+Tactic "Proof"
+unfold;
+loop("x>=2", 'R=="[{x:=x+1;}*]x>=1"); <(
+  "Init":
+    auto,
+  "Post":
+    auto,
+  "Step":
+    auto
+)
 End.
 End.
