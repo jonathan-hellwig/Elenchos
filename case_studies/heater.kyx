@@ -1,0 +1,130 @@
+﻿/* Exported from KeYmaera X v5.0.2 */
+
+Theorem "Thermostat"
+Definitions
+    Real a;
+    Real b;
+    Real vh;
+End.
+ProgramVariables
+    Real x;
+    Real u;
+    Real v;
+End.
+Problem
+  u = 0 & x = 20 & a = 0.3 & b = 0.9 & vh = 40 & v >= 0-> [{?x<=21;v:=vh;++?x>21;v:=0;};{{?x=21;v:=0; ++ ?x=19;v:=vh;};{{x'=-a * (x - u), u'=-b*(u-v) & x <= 19} ++
+  {{x'=-a * (x - u), u'=-b*(u-v) & (19 <= x & x <= 21)}} ++
+  {x'=-a * (x - u), u'=-b*(u-v) & x >= 21}}}*@invariant(x>=1/200*(u-20)^2+17 & u>=0 & v>=0 & (x >= 19 | v = vh) & u <= 40 & (x <= 21 | v = 0))]x>=17
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+todo
+End.
+
+Tactic "Thermostat: Proof"
+composeb('R=="u=0&x=20&a()=0.3&b()=0.9&vh()=40&v>=0->#[{?x<=21;v:=vh();++?x>21;v:=0;}{{?x=21;v:=0;++?x=19;v:=vh();}{{x'=-a()*(x-u),u'=-b()*(u-v)&x<=19}++{x'=-a()*(x-u),u'=-b()*(u-v)&19<=x&x<=21}++{x'=-a()*(x-u),u'=-b()*(u-v)&x>=21}}}*]x>=17#") ; unfold ; <(
+  "[?x<=21;v:=vh();][{{?x=21;v:=0;++?x=19;v:=vh();}{{x'=-a()*(x-u),u'=-b()*(u-v)&x<=19}++{x'=-a()*(x-u),u'=-b()*(u-v)&19<=x&x<=21}++{x'=-a()*(x-u),u'=-b()*(u-v)&x>=21}}}*]x>=17": loop("x>=1/200*(u-20)^2+17&u>=0&v>=0&(x>=19|v=vh())&u<=40&(x<=21|v=0)", 'R=="[{{?x=21;v:=0;++?x=19;v:=vh();}{{x'=-a()*(x-u),u'=-b()*(u-v)&x<=19}++{x'=-a()*(x-u),u'=-b()*(u-v)&19<=x&x<=21}++{x'=-a()*(x-u),u'=-b()*(u-v)&x>=21}}}*]x>=17") ; <(
+      "Init": QE,
+      "Post": QE,
+      "Step": allL2R('L=="a()=0.3") ; allL2R('L=="b()=0.9") ; allL2R('L=="vh()=40") ; hideL('L=="a()=0.3") ; hideL('L=="b()=0.9") ; hideL('L=="vh()=40") ; chase('R=="[{?x=21;v:=0;++?x=19;v:=40;}{{x'=-0.3*(x-u),u'=-0.9*(u-v)&x<=19}++{x'=-0.3*(x-u),u'=-0.9*(u-v)&19<=x&x<=21}++{x'=-0.3*(x-u),u'=-0.9*(u-v)&x>=21}}](x>=1/200*(u-20)^2+17&u>=0&v>=0&(x>=19|v=40)&u<=40&(x<=21|v=0))") ; unfold ; <(
+          "[{x'=-0.3*(x-u),u'=-0.9*(u-0)&x<=19}](x>=1/200*(u-20)^2+17&u>=0&0>=0&(x>=19|0=40)&u<=40&(x<=21|0=0))": auto,
+          "[{x'=-0.3*(x-u),u'=-0.9*(u-40)&x<=19}](x>=1/200*(u-20)^2+17&u>=0&40>=0&(x>=19|40=40)&u<=40&(x<=21|40=0))": auto,
+          "[{x'=-0.3*(x-u),u'=-0.9*(u-40)&19<=x&x<=21}](x>=1/200*(u-20)^2+17&u>=0&40>=0&(x>=19|40=40)&u<=40&(x<=21|40=0))": auto,
+          "[{x'=-0.3*(x-u),u'=-0.9*(u-0)&19<=x&x<=21}](x>=1/200*(u-20)^2+17&u>=0&0>=0&(x>=19|0=40)&u<=40&(x<=21|0=0))": auto,
+          "[{x'=-0.3*(x-u),u'=-0.9*(u-0)&x>=21}](x>=1/200*(u-20)^2+17&u>=0&0>=0&(x>=19|0=40)&u<=40&(x<=21|0=0))": auto,
+          "[{x'=-0.3*(x-u),u'=-0.9*(u-40)&x>=21}](x>=1/200*(u-20)^2+17&u>=0&40>=0&(x>=19|40=40)&u<=40&(x<=21|40=0))": auto
+        )
+    ),
+  "[?x>21;v:=0;][{{?x=21;v:=0;++?x=19;v:=vh();}{{x'=-a()*(x-u),u'=-b()*(u-v)&x<=19}++{x'=-a()*(x-u),u'=-b()*(u-v)&19<=x&x<=21}++{x'=-a()*(x-u),u'=-b()*(u-v)&x>=21}}}*]x>=17": auto using "x>21 :: u=0 :: x=20 :: a()=0.3 :: b()=0.9 :: vh()=40 :: v>=0 :: nil"
+)
+End.
+
+End.
