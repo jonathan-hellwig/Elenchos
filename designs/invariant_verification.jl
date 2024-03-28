@@ -21,11 +21,14 @@ verification = VerificationProblem(heater, P, Q, (0.0, 10.0))
 # Goal: Find the right abstraction to interact with the proof
 p = 1
 q = 1
-J(p,q) = p * heater.x > 0 + q
+J = p * heater.x > 0 + q
 for _ in 1:100
-    # Invariant template
+    # I could do this step by hand
+    f1 = qe(Imply(P, J))
+    f2 = qe(Imply(J, Q))
+    
     # Select sampling strategy
-    samples = sample(J(p,q), 100)
+    samples = sample(J && f1 && f2, 100)
     trajectories = solve(heater, samples, (0.0, 10.0))
     if trajectories ∈ Q
         # Return refinement of J
@@ -45,7 +48,7 @@ plot(trajectories, vars=(t, heater.x), label="x")
 prove(verification, J)
 
 # 1. Concept: Parametric formulas. Difference between numeric and symbolic variables
-f1 = p * x^2 + q * x + 1 > 0
+f1 = Exists(p, ForAll(x, p * x^2 + q * x + 1 > 0))
 # 2. Concept: Substitution for semialgebraic formulas (stable transformation: formula -> formula)
 f2 = subst(f1, [p => 1, q => 1])
 # 3. Concept: Sampling. Sample all free variables in the formula (semi-algebraic set)
@@ -74,3 +77,28 @@ counter_example(J -> [heater]J)
 
 # 13. Concept: Check with invariant
 check(J -> [heater]J, invariant = J)
+
+
+# Given J, P, Q
+n = 100
+# I could do this step by hand
+init = qe(Imply(P, J))
+final = qe(Imply(J, Q))
+# This should return a dictionary with the values of the parameters
+p_new = sample(init && final, 1)
+# p_new = 1
+for _ in 1:n
+    J_subst = subst(J, [p => p_new])
+    samples = sample(J_subst, 100)
+    trajectories = solve(heater, samples, (0.0, 10.0))
+    if all(trajectory -> all(J_subst.(trajectory)), trajectories)
+        if check_invariant(heater, J_subst)
+            println("Proved")
+            break
+        end
+    else
+        # p_new = update(J, p_new, trajectories, init, final)
+        # p_new = p_new + 1
+        p_new = sample(init && final, 1)
+    end
+end
