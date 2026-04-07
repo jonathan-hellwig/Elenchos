@@ -14,7 +14,7 @@ Automated proving with tactics and strategies. Combines propositional logic, fir
 
 ```julia
 using Pkg
-Pkg.add("Elenchos")
+Pkg.add(url="https://github.com/jonathan-hellwig/Elenchos.jl.git")
 ```
 
 ## Example
