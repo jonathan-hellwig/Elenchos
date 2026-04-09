@@ -30,13 +30,14 @@ function Tactics.execute(t::LinArith, p::Derivation, subgoal_idx::Int)::Derivati
         throw(TacticFailure("LinArith: Bound found ($(c_max.value)) is weaker than goal ($d)"))
     end
     # 3. Extract facts from antecedents and combine them
-    combined_fact = λ' * ante(p, subgoal_idx=subgoal_idx)
+    combined_fact = λ' * ante(seq)
 
-    # 4. Chain the proof
-    p = p |> trans(c_max, subgoal_idx=subgoal_idx, target_idx=t.target_idx)
-    p = p |> apply(normalize(combined_fact), subgoal_idx=subgoal_idx)
-    p = p |> Repeat(id())
-    p = p |> ring_arith()
+    # 4. Chain the proof on a separate subproof
+    subproof = start_proof(seq)
+    subproof = subproof |> zero_form()
+    subproof = subproof |> trans(-d + c_max, target_idx=t.target_idx)
+    subproof = subproof |> apply(combined_fact)
+    subproof = subproof |> arith()
 
-    return p
+    return p |> exact(subproof, subgoal_idx=subgoal_idx)
 end

@@ -177,6 +177,7 @@ function ring_norm(seq_pos::SequentPosition=Cons(1); subgoal_idx::Int=1)
         coeff_arith,            # 13. simplify new coefficients
         cleanup,                # 14. remove identity elements
         cleanup2,
+        Repeat(rewrite_axiom(AX_ADD_ASSO,seq_pos=seq_pos, subgoal_idx=subgoal_idx))
     )
 end
 

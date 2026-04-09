@@ -523,7 +523,6 @@ function Tactics.execute(t::Apply, p::Derivation, subgoal_idx::Int)::Derivation
             last_err = err
         end
     end
-    println(p)
     if last_err isa Exception
         throw(last_err)
     end

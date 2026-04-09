@@ -105,6 +105,11 @@ function Tactics.execute(t::Trans, p::Derivation, subgoal_idx::Int)::Derivation
     return p |> and_right(; subgoal_idx=subgoal_idx)
 end
 
+function trans(constant::Rational; target_idx::Union{Cons,First,Nothing}=First(), subgoal_idx::Union{Int,Nothing}=1)
+    term = convert(Term, constant)
+    return trans(term, target_idx=target_idx, subgoal_idx=subgoal_idx)
+end
+
 @tactic ArithEval(seq_pos::Union{SequentPosition,Nothing}=nothing)
 function Tactics.execute(t::ArithEval, p::Derivation, subgoal_idx::Int)::Derivation
     seq = p.assumptions[subgoal_idx]
@@ -175,7 +180,7 @@ function Tactics.execute(t::Congr, p::Derivation, subgoal_idx::Int)::Derivation
     for step in 1:length(diff_idx)
         if step < length(diff_idx)
             # Bridge T_step with T_end using Transitivity to branch
-                p = p |> trans(T_terms[step+1]; target_idx=Cons(1), subgoal_idx=current_subgoal)
+            p = p |> trans(T_terms[step+1]; target_idx=Cons(1), subgoal_idx=current_subgoal)
         end
 
         d_idx = diff_idx[step]

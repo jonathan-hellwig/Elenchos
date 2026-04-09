@@ -364,6 +364,10 @@ function ante(p::Derivation; subgoal_idx::Int=1)
     return [Fact(fml) for fml in p.assumptions[subgoal_idx].antecedent]
 end
 
+function ante(seq::Sequent)
+    return [Fact(fml) for fml in seq.antecedent]
+end
+
 # ─── Symbolic Multi-Fact Linear Combinations ─────────────────────────────────
 function normalize(t::InequalityFact)::InequalityFact
     norm_left, p_left = normalize(t.left)
@@ -389,6 +393,7 @@ function normalize_right(t::InequalityFact)::InequalityFact
     normalize(t - t.left)
 end
 
+# TODO: Add Repeat(id()) here.
 function DerivedTactics.apply(f::AbstractFact; subgoal_idx::Int=1, target_idx::Union{Cons,Nothing}=Cons(1))
-    Choice(apply(f.proof; subgoal_idx=subgoal_idx, target_idx=target_idx), Then(zero_form(subgoal_idx=subgoal_idx, target_idx=target_idx), ring_norm(target_idx, subgoal_idx=subgoal_idx), apply(normalize(f - f.right).proof, subgoal_idx=subgoal_idx, target_idx=target_idx)))
+    Then(Choice(apply(f.proof; subgoal_idx=subgoal_idx, target_idx=target_idx), Then(zero_form(subgoal_idx=subgoal_idx, target_idx=target_idx), ring_norm(target_idx, subgoal_idx=subgoal_idx), apply(normalize(f - f.right).proof, subgoal_idx=subgoal_idx, target_idx=target_idx))),Repeat(id(subgoal_idx=nothing)))
 end
